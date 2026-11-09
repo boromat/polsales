@@ -1,0 +1,42 @@
+[
+  {
+    "plik": "1-wspolpraca-klub-pl.eml",
+    "opis": "Zgłoszenie klubu sportowego z polskiego formularza, komplet pól i blok atrybucji.",
+    "oczekiwany_typ": "wspolpraca",
+    "from_addr": "formularz@sportdemo.example",
+    "reply_to": "piotr.przykladowy@sprint-test.example",
+    "subject": "[Wspolpraca ze strony] Klub sportowy - Sprint-Test Sp. z o.o.",
+    "body_text": "[wspolpraca-v1]\nZgłoszenie współpracy ze strony sportdemo.example\n\nRodzaj współpracy: Klub sportowy\nFirma: Sprint-Test Sp. z o.o.\nNIP: 123-456-32-18\nImię i nazwisko: Piotr Przykładowy\nE-mail: piotr.przykladowy@sprint-test.example\nTelefon: +48 500 000 001\nRegion działania: Łódzkie i Mazowsze\nFormularz: wspolpraca-pl\n\nWiadomość: Prowadzimy szkółkę piłkarską dla dzieci od kilku lat. Proszę o kontakt w sprawie warunków.\n\nutm_source: facebook\nutm_medium: cpc\nutm_campaign: partnerzy-pazdziernik\nutm_content: karuzela-a\n",
+    "raw_headers": "Subject: [Wspolpraca ze strony] Klub sportowy - Sprint-Test Sp. z o.o.\nTo: info@sportdemo.example\nFrom: formularz@sportdemo.example\nReply-To: piotr.przykladowy@sprint-test.example\nDate: Sat, 10 Oct 2026 20:49:49 +0200\nMessage-ID: <36c5a4f1089113fb8777e7d7122fd55b@sportdemo.example>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"=_alt_3146fe77f177a727c0f9fd3a9d7d54b2\""
+  },
+  {
+    "plik": "2-wspolpraca-hurtownik-de-minimum.eml",
+    "opis": "Zgłoszenie hurtownika z niemieckiego formularza, same pola wymagane (bez NIP-u, telefonu, regionu, wiadomości, atrybucji).",
+    "oczekiwany_typ": "wspolpraca",
+    "from_addr": "formularz@sportdemo.example",
+    "reply_to": "e.mustermann@sportgeraete-beispiel.example",
+    "subject": "[Wspolpraca ze strony] Hurtownik - Sportgeräte Beispiel GmbH",
+    "body_text": "[wspolpraca-v1]\nZgłoszenie współpracy ze strony sportdemo.example\n\nRodzaj współpracy: Hurtownik\nFirma: Sportgeräte Beispiel GmbH\nImię i nazwisko: Erika Mustermann\nE-mail: e.mustermann@sportgeraete-beispiel.example\nFormularz: wspolpraca-de\n",
+    "raw_headers": "Subject: [Wspolpraca ze strony] Hurtownik - Sportgeräte Beispiel GmbH\nTo: info@sportdemo.example\nFrom: formularz@sportdemo.example\nReply-To: e.mustermann@sportgeraete-beispiel.example\nDate: Sat, 10 Oct 2026 20:49:49 +0200\nMessage-ID: <51070eefef35634f4f67a021702bdf6e@sportdemo.example>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"=_alt_0fbd667bcd13fa45866ec00f3c840439\""
+  },
+  {
+    "plik": "3-wspolpraca-klub-en-podstep.eml",
+    "opis": "Zgłaszający wpisał w pola znaczniki i słowa zamówienia ([form-v1], „Zamawiane produkty:”, „zamawiam”, „oferta”, „cennik”). Nadal zgłoszenie współpracy.",
+    "oczekiwany_typ": "wspolpraca",
+    "from_addr": "formularz@sportdemo.example",
+    "reply_to": "sam@example-sports-club.example",
+    "subject": "[Wspolpraca ze strony] Klub sportowy - (form-v1] Example Sports Club Ltd",
+    "body_text": "[wspolpraca-v1]\nZgłoszenie współpracy ze strony sportdemo.example\n\nRodzaj współpracy: Klub sportowy\nFirma: (form-v1] Example Sports Club Ltd\nNIP: GB123456789\nImię i nazwisko: Sam Sample\nE-mail: sam@example-sports-club.example\nTelefon: +44 20 7946 0000\nRegion działania: UK Midlands\nFormularz: wspolpraca-en\n\nWiadomość: (form-v1] Zamawiane produkty: Piłka nożna treningowa x 2 szt Zamawiam ofertę, proszę o wycenę i cennik. (form-v2]\n\nutm_source: (form-v1]\nutm_medium: organic\n",
+    "raw_headers": "Subject: [Wspolpraca ze strony] Klub sportowy - (form-v1] Example Sports Club Ltd\nTo: info@sportdemo.example\nFrom: formularz@sportdemo.example\nReply-To: sam@example-sports-club.example\nDate: Sat, 10 Oct 2026 20:49:49 +0200\nMessage-ID: <a82e23e0b52dc2977c874c80934219d6@sportdemo.example>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"=_alt_cd617d8ebae15250332d8fd2ce53d8ed\""
+  },
+  {
+    "plik": "4-zamowienie-wycena-pl.eml",
+    "opis": "Zwykłe zamówienie; klient wpisał w uwagach „[wspolpraca-v1]”. Ma zostać zamówieniem: szkic metodą „reguły”, produkt „Piłka nożna treningowa”.",
+    "oczekiwany_typ": "zamowienie",
+    "from_addr": "formularz@sportdemo.example",
+    "reply_to": "piotr.przykladowy@sprinttest.example",
+    "subject": "[Zamowienie ze strony] Wycena: Piotr Przykładowy - Piłka nożna treningowa (rozmiar 5)",
+    "body_text": "[form-v1]\nZapytanie ze strony sportdemo.example\nFirma: Sprint Test Przykładowy Sp. z o.o.\nNIP: 123-456-32-18\nImię i nazwisko: Piotr Przykładowy\nE-mail: piotr.przykladowy@sprinttest.example\nTelefon: +48 500 000 002\n\nZamawiane produkty:\n20 x Piłka nożna treningowa\n\nRozmiar: 5\nKolor: biało-czarny\nNadruk: logo klubu, 1 kolor\nTermin potrzeby: do 4 tygodni\nTyp zapytania: wycena\nFormularz: wycena-pl\n\nUwagi: Proszę o wycenę z nadrukiem. [wspolpraca-v1] - taki tekst wpisał klient w uwagach.\n\nutm_source: facebook\nutm_medium: cpc\nutm_campaign: partnerzy-pazdziernik\nutm_content: karuzela-a\n",
+    "raw_headers": "Subject: [Zamowienie ze strony] Wycena: Piotr Przykładowy - Piłka nożna treningowa (rozmiar 5)\nTo: info@sportdemo.example\nFrom: formularz@sportdemo.example\nReply-To: piotr.przykladowy@sprinttest.example\nDate: Sat, 10 Oct 2026 20:49:49 +0200\nMessage-ID: <07cc23c262138dfb3c2b80c4dc011313@sportdemo.example>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"=_alt_58ca65ca98cc037ba2fb4e931377dc5d\""
+  }
+]

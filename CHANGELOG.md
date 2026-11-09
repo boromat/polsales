@@ -1,0 +1,67 @@
+# Changelog
+
+All notable changes to this project are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
+
+## [1.0.0] - 2026-11-09
+
+First public release.
+
+### Added
+- PII masking with [polanon](https://pypi.org/project/polanon/) for every LLM call: assistant
+  chat (question, history, tool results), weekly summaries, recommendations and the AI e-mail
+  parser. Tokens are restored locally in tool arguments, structured output and the streamed answer.
+- Values known from the database are always masked (polanon `DenylistGuard`): client company
+  names (also without the legal form), NIPs with and without dashes, draft and contact names,
+  also when a name looks like a well-known brand.
+- Fail closed: with masking on and polanon unavailable, nothing is sent to the model.
+- Settings -> AI privacy: masking switch, optional spaCy NER mode, polanon install status.
+  Stored in the new `ops.app_settings` table (migration `0019`).
+- Chat badge with the number of masked values and the question exactly as the model saw it.
+- `AI_BASE_URL` alone enables a custom Anthropic-compatible endpoint without an API key, and
+  `tools/mock_llm.py`, a local mock model for demos and end-to-end tests.
+- Tests: masking contract with a fake anonymizer, the same scenarios with the real polanon,
+  an end-to-end test through the Anthropic SDK over HTTP, fail-closed tests, e-mail parser tests.
+- CI on Linux and Windows (PostgreSQL, ruff, migrations, backend tests with warnings as errors,
+  frontend tests, typecheck and build), on Node 24 LTS with actions v7.
+- `frontend/Dockerfile`: the Caddy image now contains the built frontend.
+
+### Fixed
+- GDPR e-mail retention never ran: it updated a column that does not exist and rolled back the
+  whole nightly job (expired sessions, sync log). It now clears the body, HTML, headers and
+  attachment metadata of handled e-mails, and each clean-up step has its own transaction.
+- Behind Caddy every login came from the proxy's IP, so 5 wrong passwords from anyone locked the
+  owner out for 15 minutes; uvicorn now reads `X-Forwarded-For` (`--proxy-headers`).
+- Docker Compose served an empty frontend: the `frontend_dist` volume was never filled.
+- `get_company_profile` and `get_orders` did not find a company when the NIP was given with
+  dashes or a `PL` prefix.
+- Chat showed raw tool names for 4 of the 13 tools; the "assistant unavailable" hint named the
+  wrong environment variable.
+- A test assumed the Anthropic SDK always sends `x-api-key`; SDK 0.120+ sends a Bearer header.
+- Vitest printed deprecation warnings from the React plugin; the Vite config did not typecheck.
+
+### Security
+- Dependency audit: `pip-audit` clean; frontend upgraded to Vite 8, `@vitejs/plugin-react` 6,
+  React Router 7 and Vitest 4.1.12, so `npm audit` reports 0 vulnerabilities (was 13, incl. a
+  React Router open redirect and Vite dev-server path traversal).
+- Ruff security rules (flake8-bandit, `S`) run in CI; every f-string SQL was checked to interpolate
+  only constant fragments chosen in code, with values always passed as bind parameters.
+- Row limits from tool arguments are clamped on the server (the JSON schema is only a hint);
+  chat input and login fields have length limits.
+- Independent security review, all findings fixed:
+  - login limits per address (IPv6 per /64) and per existing account, constant-time handling
+    of unknown usernames, sessions revoked on password change;
+  - CSRF protection (Origin / Sec-Fetch-Site check) for state-changing API requests;
+  - request body capped while streaming (chunked bodies had no limit) and in Caddy;
+  - `CF_ACCESS_ONLY` mode and throttled JWKS refresh for Cloudflare Access;
+  - the GA4 service account JSON was treated as a file path, so its private key could end up in
+    error messages; it is now parsed as JSON and scrubbed from errors;
+  - notification subjects are flattened to one line; the production guard rejects short or
+    placeholder `SESSION_SECRET` values; the backend image runs as a non-root user.
+
+### Changed
+- Session cookie `polsales_session` and `POLSALES_USERNAME` / `POLSALES_PASSWORD` / `POLSALES_EMAIL`
+  for `create_user` (names left over from the internal project name).
+- Demo data is a fictional sports shop; all sample e-mails, people, companies and NIPs are invented.
+- Removed the unused `pytest-asyncio` dependency; added `pymupdf` to dev extras so the PDF
+  layout tests run instead of being skipped.

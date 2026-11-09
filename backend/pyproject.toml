@@ -1,0 +1,82 @@
+[project]
+name = "polsales-backend"
+version = "1.0.0"
+description = "PolSales - sales and marketing analytics panel with a privacy-first AI assistant (backend)"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+    "argon2-cffi>=23.1",
+    # Weryfikacja podpisu tokenów Cloudflare Access (RS256) - extra `crypto` daje backend RSA.
+    "pyjwt[crypto]>=2.9",
+    "python-multipart>=0.0.12",
+    "anthropic>=0.40",
+    "apscheduler>=3.11",
+    "tenacity>=9.0",
+    "httpx>=0.28",
+    "imap-tools>=1.7",
+    "rapidfuzz>=3.10",
+    "phonenumbers>=8.13",
+    "reportlab>=4.0",
+    # Odwracalne maskowanie polskich danych osobowych przed wysłaniem tekstu do modelu.
+    "polanon>=0.2.2",
+]
+
+[project.optional-dependencies]
+# Tryb NER maskowania (spaCy). Po instalacji: python -m spacy download pl_core_news_md
+ner = [
+    "polanon[ner]>=0.2.2",
+]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    # Test układu raportu PDF (bez niego test_report_pdf_uklad jest pomijany).
+    "pymupdf>=1.24",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+# Kod musi działać na Pythonie >=3.10 (patrz requires-python) - target py310, by reguły UP
+# nie proponowały składni 3.11+ (np. datetime.UTC), która wywala się na dev-venv 3.10.
+target-version = "py310"
+
+[tool.ruff.lint]
+# E/W  pycodestyle (w tym E501 dlugosc linii - sterowana line-length=120)
+# F    pyflakes (niewykorzystane importy/zmienne)
+# I    isort (kolejnosc importow)
+# UP   pyupgrade (modernizacja skladni)
+# B    flake8-bugbear (typowe pulapki)
+# S    flake8-bandit (reguły bezpieczeństwa; wyjątki opisane przy konkretnych liniach)
+select = ["E", "F", "I", "UP", "B", "W", "S"]
+# B008: FastAPI z zalozenia wymaga wywolan w domyslnych argumentach (Depends(), Query(), File()).
+# To idiom frameworka, nie blad - w przeciwnym razie regula zapala sie na kazdym endpoincie.
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Testy: assert to ich język, a "hasła" i klucze w nich to jawne wartości testowe.
+"tests/**" = ["S101", "S105", "S106", "S108", "S311"]
+# S608: te moduły składają SQL z f-stringów, ale wstawiają wyłącznie stałe fragmenty wybierane
+# w kodzie (segment, granulacja, kolumna sortowania ze słownika, lista kanałów płatnych);
+# wartości od użytkownika i modelu idą zawsze jako parametry. Sprawdzone przy przeglądzie 1.0.
+"app/ai/tools.py" = ["S608"]
+"app/services/marketing.py" = ["S608"]
+# Zapytanie GAQL do Google Ads (nie SQL) z datami wyliczonymi w kodzie.
+"app/integrations/marketing_sync.py" = ["S608"]
+# Migracje: SQL/DDL składany ze stałych w samym pliku migracji, bez danych z zewnątrz.
+"alembic/**" = ["S608"]

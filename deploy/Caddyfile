@@ -1,0 +1,43 @@
+# Reverse proxy + automatyczne HTTPS + serwowanie statycznego frontendu (SPA).
+# {$APP_DOMAIN} podstawiane ze zmiennej środowiskowej. Lokalnie ustaw APP_DOMAIN=localhost.
+
+{$APP_DOMAIN} {
+	encode gzip
+
+	# API → FastAPI. flush_interval -1 jest kluczowy dla streamingu SSE czatu.
+	# Limit ciała żądania już na brzegu (API liczy też bajty strumienia).
+	request_body {
+		max_size 8MB
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	# Statyczny frontend (SPA) - fallback na index.html dla client-side routingu.
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		# HSTS z includeSubDomains (raport i panel sa same-origin).
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		# SAMEORIGIN, nie DENY: widok „Raporty" osadza wlasny PDF (/api/reports/pdf)
+		# w <iframe> na tej samej domenie. DENY blokuje ramkowanie ZAWSZE, takze wlasne -
+		# przegladarka odrzuca odpowiedz z ERR_BLOCKED_BY_RESPONSE i podglad zostaje pusty.
+		# Ochrona przed clickjackingiem z obcych stron pozostaje pelna.
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "same-origin"
+		# SPA React + fetch do /api - wszystko same-origin, wiec 'self' wystarcza.
+		# style-src 'unsafe-inline' pod Tailwind/inline style.
+		# frame-ancestors 'self' z tego samego powodu co X-Frame-Options wyzej: 'none'
+		# zakazuje rowniez osadzania we wlasnej stronie (dyrektywa nie zna pojecia „swoj").
+		Content-Security-Policy "default-src 'self'; base-uri 'self'; frame-ancestors 'self'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+	}
+}

@@ -1,0 +1,35 @@
+# Trzymaj obraz Linux czysty - bez artefaktow deweloperskich z Windows.
+# COPY . . w Dockerfile inaczej wciagnie .venv, cache i testy do obrazu.
+
+# Wirtualne srodowisko (Windows) - bezuzyteczne i szkodliwe w obrazie Linux.
+.venv/
+
+# Cache bajtkodu i narzedzi
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+alembic/versions/__pycache__/
+
+# Testy - nie sa potrzebne w obrazie produkcyjnym
+tests/
+
+# Dokumentacja
+*.md
+
+# Sekrety / konfiguracja lokalna
+.env
+.env.*
+
+# Kontrola wersji / edytory
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Zachowane w obrazie (dla jasnosci - NIE ignorowane):
+#   app/            kod aplikacji
+#   alembic/        migracje (bez __pycache__)
+#   pyproject.toml  definicja pakietu i zaleznosci

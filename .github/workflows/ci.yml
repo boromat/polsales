@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: windows-latest
+            python: "3.13"
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/polsales
+      SESSION_SECRET: ci-secret
+      PYTHONUTF8: "1"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Linux: PostgreSQL 16 as a service container.
+      - name: Start PostgreSQL (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          docker run -d --name pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=polsales \
+            -p 5432:5432 --health-cmd "pg_isready -U postgres -d polsales" \
+            --health-interval 2s --health-retries 30 postgres:16
+          for i in $(seq 1 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' pg)" = "healthy" ] && break
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' pg
+
+      # Windows: the PostgreSQL preinstalled on the runner image (no Docker for Linux images there).
+      - name: Start PostgreSQL (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $svc = Get-Service -Name "postgresql*" | Select-Object -First 1
+          Set-Service -Name $svc.Name -StartupType Manual
+          Start-Service -Name $svc.Name
+          $env:PGPASSWORD = "root"
+          & "$env:PGBIN\psql.exe" -U postgres -h 127.0.0.1 -c "ALTER USER postgres PASSWORD 'postgres';"
+          $env:PGPASSWORD = "postgres"
+          & "$env:PGBIN\createdb.exe" -U postgres -h 127.0.0.1 polsales
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend (with dev extras and polanon)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff lint (backend and tools)
+        run: ruff check . ../tools
+
+      - name: Apply migrations
+        run: alembic upgrade head
+
+      - name: Run tests (warnings are errors)
+        run: pytest -q -W error
+
+  frontend:
+    name: Frontend (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node 24 (LTS)
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tests (vitest)
+        run: npm test
+
+      - name: Typecheck and build
+        run: npm run build

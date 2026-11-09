@@ -1,0 +1,115 @@
+# Stack: PostgreSQL + API (FastAPI) + worker (APScheduler) + Caddy (HTTPS + statyczny frontend).
+# API i worker współdzielą ten sam obraz - różnią się tylko poleceniem startowym.
+
+# Nazwa projektu ustawiona jawnie, bo domyślnie bierze się z nazwy katalogu (`deploy`)
+# i wtedy wolumeny nazywają się `deploy_pgdata`, `deploy_appdata`… Skrypt backupu szuka
+# `polsales_appdata`, a przy odtwarzaniu z kopii pomyłka o jeden wolumen jest cicha:
+# stack wstaje, tylko z pustymi danymi.
+name: polsales
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Port NIE publikowany na host - dostęp tylko z sieci wewnętrznej compose.
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # --proxy-headers: adres klienta z X-Forwarded-For od Caddy. Bez tego każde logowanie ma IP
+    # Caddy i limit prób (IP + login) blokowałby właściciela po 5 cudzych błędnych hasłach.
+    # Ufamy wszystkim nadawcom, bo api nie publikuje portów - dociera do niego wyłącznie Caddy.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - appdata:/data              # załączniki maili, itp.
+    # Healthcheck bez curl/wget (obraz slim ich nie ma) - pytamy /api/ping przez urllib.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Bez publikacji portów - Caddy proxuje /api do api:8000 wewnątrz sieci.
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: python -m app.scheduler.runner
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - appdata:/data
+    # Worker biegnie jako PID 1 - sprawdzamy, ze proces to wciaz scheduler.runner
+    # (grep po /proc/1/cmdline nie wymaga procps/pgrep, ktorych obraz slim nie ma).
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qa app.scheduler.runner /proc/1/cmdline"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    # Obraz Caddy z wbudowanym frontendem (frontend/Dockerfile: npm ci + vite build).
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  pgdata:
+  appdata:
+  caddy_data:
+  caddy_config:

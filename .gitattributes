@@ -1,0 +1,15 @@
+# Normalizuj konce linii w repo do LF; w katalogu roboczym Windows dostaje CRLF.
+* text=auto
+
+# Skrypty Windows musza miec CRLF, inaczej cmd.exe potrafi sie zachlysnac.
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Skrypty powloki zawsze LF (uruchamiane na VPS).
+*.sh text eol=lf
+
+# Pliki binarne - bez zadnej konwersji.
+*.png binary
+*.pdf binary
+*.dump binary
+*.gif binary
