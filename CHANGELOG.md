@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
   so it could not be set; it is now a documented setting (empty = the chat model).
 
 ### Changed
+- `docs/08-plan-etapow.md` is marked as an archived build plan; the README test counts
+  match the current suite (284 backend, 17 frontend).
 - The Polish number format used by the weekly summary and the recommendations lives in one
   helper, `app/services/text_format.num_pl` (it was duplicated in both services).
 

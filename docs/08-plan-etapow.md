@@ -1,5 +1,10 @@
 # Plan etapów wdrożenia
 
+> **Dokument archiwalny.** Plan i dziennik etapów z okresu budowy (do lipca 2026), sprzed
+> wydania 1.0 - nie jest aktualizowany. Liczby i zakres opisują ówczesny stan (np. migracje
+> 0001-0008, 102 testy backendu). Stan faktyczny: [README](../README.md) (sekcje "Testy
+> i jakość" i "Znane ograniczenia") oraz [CHANGELOG](../CHANGELOG.md).
+
 Status aktualny: **Etapy 0-9: pełny zakres + UI + audyt + raporty PDF + responsywność + usprawnienia (bezpieczeństwo/analityka/UX/ops/CI).** Zweryfikowane na żywej bazie (przenośny
 Postgres, bez Dockera): migracje 0001-0008, 102 testy backendu + 5 frontendu, code-split, CI, pełny flow danych i API.
 Dopracowanie UI (lipiec 2026): odświeżony system projektowy - self-hostowany font Inter Variable, tokeny cieni/elewacji,

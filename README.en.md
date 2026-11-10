@@ -192,7 +192,7 @@ The configuration status (without secret values) is shown on the **Settings** pa
 ## Tests and quality
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 256 tests, warnings are errors
+cd backend && ruff check . && pytest -q -W error   # 284 tests, warnings are errors
 cd frontend && npm test && npm run build           # 17 tests, typecheck (app and config), build
 ```
 

@@ -4,7 +4,7 @@ Ten katalog zawiera pełną specyfikację systemu. Kolejność czytania:
 
 1. **[00-decyzje-kanoniczne.md](00-decyzje-kanoniczne.md)** - nadrzędne rozstrzygnięcia. W razie
    sprzeczności między dokumentami źródłowymi ten plik ma pierwszeństwo.
-2. **[08-plan-etapow.md](08-plan-etapow.md)** - co jest zbudowane, co dalej, w jakiej kolejności.
+2. **[08-plan-etapow.md](08-plan-etapow.md)** - archiwalny plan i dziennik etapów budowy (sprzed wydania 1.0).
 3. **[06-metryki.md](06-metryki.md)** - kanoniczne definicje LTV, CAC, częstotliwości, netto, lejka.
 4. **[05-integracje.md](05-integracje.md)** - instrukcje krok-po-kroku dostępów do API Meta/Google/GA4,
    zadanie dla strony www (GA4 + UTM), import CSV.

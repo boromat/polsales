@@ -190,7 +190,7 @@ Stan konfiguracji (bez wartości sekretów) jest widoczny w zakładce **Ustawien
 ## Testy i jakość
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 256 testów, ostrzeżenia traktowane jak błędy
+cd backend && ruff check . && pytest -q -W error   # 284 testy, ostrzeżenia traktowane jak błędy
 cd frontend && npm test && npm run build           # 17 testów, typecheck (aplikacja i konfiguracja), build
 ```
 
