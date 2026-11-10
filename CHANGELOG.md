@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
   so it could not be set; it is now a documented setting (empty = the chat model).
 
 ### Security
+- Assistant conversations belong to the account that started them (migration `0020`; existing
+  conversations go to the first account) and the chat API lists and opens only the caller's own.
+  Before, every account saw every conversation.
 - Assistant tools fail closed: when the read-only `assistant_ro` session cannot be used, or
   runs as another role, every tool returns an error that points to the README and a warning is
   logged. Before, the tools silently fell back to the application's full-privilege session.

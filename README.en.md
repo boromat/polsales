@@ -234,8 +234,11 @@ polsales/
 
 ## Known limitations
 
-- Built for a single owner and a scale of hundreds of orders a month: one account, no roles,
-  metrics computed by plain views, no server-side pagination of the company list.
+- Built for a single owner and a scale of hundreds of orders a month: no roles, metrics computed
+  by plain views, no server-side pagination of the company list.
+- Every account, including the ones Cloudflare Access creates for addresses in
+  `CF_ACCESS_ALLOWED_EMAILS`, has full rights to the panel's data: orders, customers, e-mails,
+  reports and settings. Only assistant conversations are separate - each account sees its own.
 - Masking is not an absolute guarantee. The rules (without NER) do not catch every place name or
   unusual surname, and a new customer who is not in the database, has no legal form and no first
   name in their company name can go out in clear. That is why values known from the database

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session as DBSession
 from app.ai.assistant import is_available, run_stream, strip_context
 from app.db.base import AssistantSessionLocal, SessionLocal, get_db
 from app.db.models.chat import Conversation, Message
+from app.db.models.ops import User
 from app.deps import get_current_user
 
 router = APIRouter(prefix="/api/chat", tags=["chat"], dependencies=[Depends(get_current_user)])
@@ -40,11 +41,20 @@ def status() -> dict:
     return {"available": is_available()}
 
 
+def _own_conversation(db: DBSession, conv_id: uuid.UUID, user: User) -> Conversation:
+    """Rozmowa zalogowanego konta. Cudza rozmowa daje to samo 404 co nieistniejąca."""
+    conv = db.get(Conversation, conv_id)
+    if conv is None or conv.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Nie znaleziono rozmowy")
+    return conv
+
+
 @router.get("/conversations", response_model=list[ConversationOut])
-def list_conversations(db: DBSession = Depends(get_db)) -> list[ConversationOut]:
+def list_conversations(user: User = Depends(get_current_user),
+                       db: DBSession = Depends(get_db)) -> list[ConversationOut]:
     rows = db.scalars(
         select(Conversation)
-        .where(Conversation.archived_at.is_(None))
+        .where(Conversation.user_id == user.id, Conversation.archived_at.is_(None))
         .order_by(Conversation.updated_at.desc())
         .limit(50)
     ).all()
@@ -52,8 +62,9 @@ def list_conversations(db: DBSession = Depends(get_db)) -> list[ConversationOut]
 
 
 @router.post("/conversations", response_model=ConversationOut)
-def create_conversation(db: DBSession = Depends(get_db)) -> ConversationOut:
-    conv = Conversation()
+def create_conversation(user: User = Depends(get_current_user),
+                        db: DBSession = Depends(get_db)) -> ConversationOut:
+    conv = Conversation(user_id=user.id)
     db.add(conv)
     db.commit()
     db.refresh(conv)
@@ -61,7 +72,9 @@ def create_conversation(db: DBSession = Depends(get_db)) -> ConversationOut:
 
 
 @router.get("/conversations/{conv_id}/messages", response_model=list[MessageOut])
-def conversation_messages(conv_id: uuid.UUID, db: DBSession = Depends(get_db)) -> list[MessageOut]:
+def conversation_messages(conv_id: uuid.UUID, user: User = Depends(get_current_user),
+                          db: DBSession = Depends(get_db)) -> list[MessageOut]:
+    _own_conversation(db, conv_id, user)
     rows = db.scalars(
         select(Message).where(Message.conversation_id == conv_id).order_by(Message.created_at)
     ).all()
@@ -74,8 +87,14 @@ def conversation_messages(conv_id: uuid.UUID, db: DBSession = Depends(get_db)) -
 
 
 @router.post("/conversations/{conv_id}/messages")
-def send_message(conv_id: uuid.UUID, data: SendIn = Body(...)) -> StreamingResponse:
-    """Streaming SSE odpowiedzi asystenta. Używa własnej sesji DB (długożyjący strumień)."""
+def send_message(conv_id: uuid.UUID, data: SendIn = Body(...), user: User = Depends(get_current_user),
+                 db: DBSession = Depends(get_db)) -> StreamingResponse:
+    """Streaming SSE odpowiedzi asystenta. Używa własnej sesji DB (długożyjący strumień).
+
+    Właściciel rozmowy jest sprawdzany przed startem strumienia: cudza rozmowa to zwykłe 404."""
+    _own_conversation(db, conv_id, user)
+    user_id = user.id
+
     def event_gen():
         db = SessionLocal()
         # Osobna sesja read-only (assistant_ro) dla zapytań narzędzi (decyzja #9). Tworzenie sesji
@@ -87,7 +106,7 @@ def send_message(conv_id: uuid.UUID, data: SendIn = Body(...)) -> StreamingRespo
             tool_db = None
         try:
             conv = db.get(Conversation, conv_id)
-            if conv is None:
+            if conv is None or conv.user_id != user_id:
                 yield 'event: error\ndata: {"message_pl": "Nie znaleziono rozmowy"}\n\n'
                 return
             yield from run_stream(db, conv, data.text, data.view_context, tool_db=tool_db)

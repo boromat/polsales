@@ -233,8 +233,11 @@ polsales/
 ## Znane ograniczenia
 
 - Projekt jest skrojony pod jednego właściciela i skalę rzędu setek zamówień miesięcznie:
-  jedno konto, brak ról, metryki liczone widokami bez materializacji, lista firm bez paginacji
-  po stronie serwera.
+  brak ról, metryki liczone widokami bez materializacji, lista firm bez paginacji po stronie
+  serwera.
+- Wszystkie konta, także zakładane automatycznie przez Cloudflare Access dla adresów
+  z `CF_ACCESS_ALLOWED_EMAILS`, mają pełne prawa do danych panelu: zamówień, klientów, maili,
+  raportów i ustawień. Osobne są tylko rozmowy z asystentem - każde konto widzi wyłącznie własne.
 - Maskowanie nie daje gwarancji absolutnej. Reguły (bez NER) nie rozpoznają każdej nazwy miejsca
   ani nietypowego nazwiska, a nowy klient spoza bazy, bez formy prawnej i bez imienia w nazwie,
   może przejść jawnie. Dlatego wartości znane z bazy idą zawsze przez listę znanych wartości,

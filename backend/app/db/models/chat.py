@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, Numeric, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, Numeric, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,10 +15,16 @@ SCHEMA = "chat"
 
 
 class Conversation(Base):
+    """Rozmowa z asystentem. Należy do konta, które ją zaczęło - inne konta jej nie widzą."""
+
     __tablename__ = "conversations"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__ = (
+        Index("ix_conversations_user_updated", "user_id", "updated_at"),
+        {"schema": SCHEMA},
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[int] = mapped_column(ForeignKey("ops.users.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

@@ -73,7 +73,7 @@ def conversation(monkeypatch):
     """A fresh assistant conversation in the real database, removed after the test."""
     monkeypatch.setattr(assistant, "is_available", lambda: True)
     db = SessionLocal()
-    conv = Conversation()
+    conv = Conversation(user_id=db.scalar(select(User.id).where(User.username == TEST_USER)))
     db.add(conv)
     db.commit()
     yield db, conv
