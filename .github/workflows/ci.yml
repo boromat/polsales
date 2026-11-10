@@ -73,8 +73,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Ruff lint (backend and tools)
-        run: ruff check . ../tools
+      - name: Ruff lint (backend, tools and evals)
+        run: ruff check . ../tools ../evals
 
       - name: Apply migrations
         run: alembic upgrade head

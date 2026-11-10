@@ -198,7 +198,7 @@ The configuration status (without secret values) is shown on the **Settings** pa
 ## Tests and quality
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 296 tests, warnings are errors
+cd backend && ruff check . && pytest -q -W error   # 310 tests, warnings are errors
 cd frontend && npm test && npm run build           # 17 tests, typecheck (app and config), build
 ```
 
@@ -215,6 +215,17 @@ Backend tests need PostgreSQL (`DATABASE_URL`). Masking is tested at three level
   limits, Cloudflare Access only mode, secrets scrubbed from error messages.
 - `tests/test_prompt_injection.py` - an e-mail with an injected command and a tool result with
   such text reach the model between data tags, also with masking on and from the history.
+
+### Assistant evaluation
+
+[`evals/`](evals/README.md) (Polish) measures the quality of the assistant's answers, not just
+that the code runs: 18 questions about the demo data (e.g. campaign ROAS, two periods compared,
+the best-selling product, a company's LTV) with the expected number computed by plain SQL, and
+4 traps (a request to delete data, a question outside the data, a command hidden in a product
+name and in an e-mail subject). Metrics: tool choice, whether the number matches SQL, refusal in
+the traps, unknown polanon tokens in the answer, cost and time. CI runs it on the mock model only
+(`tests/test_evals.py`). There has been no run on a real model yet; the cost estimate and the
+limitations are in `evals/README.md`.
 
 CI (GitHub Actions) on Linux and Windows: ruff (incl. security rules), migrations on a clean PostgreSQL, backend tests
 (with polanon), frontend tests and build.
@@ -237,6 +248,7 @@ polsales/
 ├── frontend/              # React + Vite + TypeScript + Tailwind
 ├── deploy/                # docker-compose, Caddyfile, .env.example, backup and start scripts
 ├── docs/                  # design decisions, metrics, GDPR, integrations, demo.gif
+├── evals/                 # assistant evaluation: questions about the demo data, SQL, mock in CI
 └── tools/mock_llm.py      # local mock model (demo, end-to-end tests)
 ```
 

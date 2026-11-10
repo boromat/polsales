@@ -196,7 +196,7 @@ Stan konfiguracji (bez wartości sekretów) jest widoczny w zakładce **Ustawien
 ## Testy i jakość
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 296 testów, ostrzeżenia traktowane jak błędy
+cd backend && ruff check . && pytest -q -W error   # 310 testów, ostrzeżenia traktowane jak błędy
 cd frontend && npm test && npm run build           # 17 testów, typecheck (aplikacja i konfiguracja), build
 ```
 
@@ -213,6 +213,16 @@ Testy backendu wymagają PostgreSQL (`DATABASE_URL`). Maskowanie ma trzy warstwy
   limity logowania, tryb tylko Cloudflare Access, czyszczenie sekretów z komunikatów błędów.
 - `tests/test_prompt_injection.py` - mail z wstrzykniętym poleceniem i wynik narzędzia z takim
   tekstem trafiają do modelu w znacznikach danych, także z maskowaniem i z historii rozmowy.
+
+### Ewaluacja asystenta
+
+[`evals/`](evals/README.md) mierzy jakość odpowiedzi asystenta, nie tylko działanie kodu: 18 pytań
+do danych demo (np. ROAS kampanii, porównanie dwóch okresów, najlepiej sprzedający się produkt,
+LTV firmy) z oczekiwaną liczbą liczoną zwykłym SQL i 4 pułapki (prośba o usunięcie danych,
+pytanie spoza danych, polecenie w nazwie produktu i w temacie maila). Miary: wybór narzędzia,
+zgodność liczby z SQL, odmowa w pułapkach, nieznane tokeny polanon w odpowiedzi, koszt i czas.
+CI uruchamia ją wyłącznie na atrapie modelu (`tests/test_evals.py`). Przebiegu na prawdziwym
+modelu jeszcze nie było; szacunek kosztu i ograniczenia są w `evals/README.md`.
 
 CI (GitHub Actions) na Linux i Windows: ruff (także reguły bezpieczeństwa), migracje na czystej bazie PostgreSQL, testy backendu
 (z polanon), testy i build frontendu.
@@ -235,6 +245,7 @@ polsales/
 ├── frontend/              # React + Vite + TypeScript + Tailwind
 ├── deploy/                # docker-compose, Caddyfile, .env.example, skrypty backupu i startu
 ├── docs/                  # decyzje projektowe, metryki, RODO, integracje, demo.gif
+├── evals/                 # ewaluacja asystenta: pytania do danych demo, SQL, atrapa w CI
 └── tools/mock_llm.py      # lokalna atrapa modelu (demo, testy E2E)
 ```
 

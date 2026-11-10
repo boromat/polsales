@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `evals/`: an evaluation of the assistant on the demo data. 18 questions with the expected number
+  computed by plain SQL and 4 traps (deleting data, a question outside the data, a command in a
+  product name and in an e-mail subject), run through the real chat loop with masking on.
+  Metrics: tool choice, number matches SQL, refusal in the traps, unknown polanon tokens, cost
+  and time. CI runs it on a mock model (`tests/test_evals.py`); a paid run needs `--yes` and
+  prints a cost estimate first.
 - Optional `google` extra (`google-analytics-data`, `google-auth`, `google-ads`) for the GA4 and
   Google Ads integrations, and a `BACKEND_EXTRAS` build arg for the Docker images. Without the
   packages a configured integration reports how to install them instead of an `ImportError`,
@@ -17,7 +23,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 - `docs/08-plan-etapow.md` is marked as an archived build plan; the README test counts
-  match the current suite (288 backend, 17 frontend).
+  match the current suite (310 backend, 17 frontend).
 - The Polish number format used by the weekly summary and the recommendations lives in one
   helper, `app/services/text_format.num_pl` (it was duplicated in both services).
 
