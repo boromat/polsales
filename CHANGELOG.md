@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Optional `google` extra (`google-analytics-data`, `google-auth`, `google-ads`) for the GA4 and
+  Google Ads integrations, and a `BACKEND_EXTRAS` build arg for the Docker images. Without the
+  packages a configured integration reports how to install them instead of an `ImportError`,
+  on the dashboard and in Settings.
+
 ### Security
 - Assistant tools fail closed: when the read-only `assistant_ro` session cannot be used, or
   runs as another role, every tool returns an error that points to the README and a warning is

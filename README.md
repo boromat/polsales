@@ -173,9 +173,16 @@ Sekrety są wyłącznie w `.env` (panel nigdy ich nie pokazuje ani nie edytuje).
 | `IMAP_*` | skrzynka z zamówieniami | brak pobierania maili |
 | `SMTP_*` | powiadomienia e-mail | brak powiadomień |
 | `META_*`, `GOOGLE_ADS_*`, `GA4_*` | kanały marketingowe | brak danych z kanału |
+| `BACKEND_EXTRAS` (Docker) | opcjonalne pakiety w obrazie backendu: `google`, `ner` albo `google,ner` | sam rdzeń |
 | `CF_ACCESS_*` | opcjonalne logowanie przez Cloudflare Access (weryfikacja JWT) | tylko login i hasło |
 | `CF_ACCESS_ONLY` | wejście wyłącznie przez Access (bez logowania hasłem); zalecane przy tunelu | `false` |
 | `RAW_EMAIL_RETENTION_DAYS` | po tylu dniach worker czyści treść, HTML i nagłówki obsłużonych maili (RODO) | bez automatycznego czyszczenia |
+
+Integracje GA4 i Google Ads potrzebują opcjonalnych pakietów Google (extra `google`). Lokalnie:
+`pip install -e ".[google]"`. W Dockerze: `BACKEND_EXTRAS=google` w `deploy/.env`, a potem
+`docker compose up -d --build`. Bez tych pakietów reszta panelu działa, a skonfigurowana
+integracja pokazuje w Ustawieniach i na pulpicie komunikat o brakującym pakiecie zamiast błędu
+importu. Integracje Google nie były testowane na żywym koncie (patrz Znane ograniczenia).
 
 Stan konfiguracji (bez wartości sekretów) jest widoczny w zakładce **Ustawienia**.
 

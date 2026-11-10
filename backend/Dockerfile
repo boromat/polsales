@@ -16,9 +16,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
+# Opcjonalne extras z pyproject.toml, np. "google" (GA4 i Google Ads) albo "google,ner".
+# docker-compose przekazuje tu BACKEND_EXTRAS z deploy/.env; puste = sam rdzeń.
+ARG BACKEND_EXTRAS=""
+
 # Najpierw zależności (lepsze cache warstw)
 COPY pyproject.toml ./
-RUN pip install --upgrade pip && pip install -e .
+RUN pip install --upgrade pip \
+    && if [ -n "$BACKEND_EXTRAS" ]; then pip install -e ".[$BACKEND_EXTRAS]"; else pip install -e .; fi
 
 # Kod aplikacji
 COPY . .

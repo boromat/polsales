@@ -11,6 +11,7 @@ from app.config import settings
 from app.db.base import get_db
 from app.db.models.ops import SyncCommand
 from app.deps import get_current_user
+from app.integrations.marketing_sync import missing_google_packages
 from app.services.notifications import smtp_configured
 from app.services.privacy_settings import PrivacySettings, get_privacy_settings, privacy_status, save_privacy_settings
 
@@ -39,6 +40,8 @@ def config_status(db: DBSession = Depends(get_db)) -> dict:
         "chat_model": resolve_model(settings.chat_model),
         "email_parser_model": resolve_model(settings.email_parser_model),
         "pii_masking": get_privacy_settings(db).enabled,
+        # Komunikat o brakującym extra "google" (GA4, Google Ads) albo None.
+        "missing_packages": missing_google_packages(),
     }
 
 

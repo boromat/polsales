@@ -68,24 +68,28 @@ export function Settings() {
         <div className="grid gap-3 sm:grid-cols-2">
           {ITEMS.map((it) => {
             const on = Boolean(cfg[it.key]);
+            const missing = cfg.missing_packages?.[it.key as "ga4" | "google_ads"] ?? null;
             return (
               <Card key={it.key} className="animate-fade-in p-4">
                 <div className="flex items-start gap-3">
                   <span
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                      on ? "bg-success-soft text-success" : "bg-surface-2 text-text-subtle"
+                      on && !missing ? "bg-success-soft text-success" : "bg-surface-2 text-text-subtle"
                     }`}
                   >
-                    {on ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                    {on && !missing ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div className="text-sm font-medium text-text">{it.label}</div>
-                      <Badge tone={on ? "success" : "neutral"} dot className="shrink-0">
-                        {on ? "skonfigurowane" : "brak"}
+                      <Badge tone={on ? (missing ? "warning" : "success") : "neutral"} dot className="shrink-0">
+                        {on ? (missing ? "brak pakietu" : "skonfigurowane") : "brak"}
                       </Badge>
                     </div>
                     <p className="mt-1 text-xs text-text-muted">{it.hint}</p>
+                    {missing && (
+                      <p className={`mt-1 text-xs ${on ? "text-warning" : "text-text-subtle"}`}>{missing}</p>
+                    )}
                     {it.key === "imap" && (
                       <div className="mt-3 flex items-center gap-2">
                         <Button

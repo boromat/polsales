@@ -1,7 +1,9 @@
 """Synchronizacja danych marketingowych: GA4, Meta Ads, Meta organic, Google Ads (Etap 3).
 
 Każda funkcja degraduje, gdy brak poświadczeń (log w ops.sync_runs). Importy SDK są lokalne -
-aplikacja startuje bez tych pakietów. Upserty idempotentne (ON CONFLICT po kluczach naturalnych).
+aplikacja startuje bez tych pakietów. SDK Google (GA4, Google Ads) to opcjonalne extra "google";
+gdy go brak, skonfigurowana integracja zgłasza czytelny błąd zamiast ImportError.
+Upserty idempotentne (ON CONFLICT po kluczach naturalnych).
 
 Uwaga: te integracje wymagają realnych poświadczeń (patrz docs/05-integracje.md) i nie były testowane
 na żywym API w środowisku deweloperskim - kod odzwierciedla udokumentowane API dostawców.
@@ -9,6 +11,7 @@ na żywym API w środowisku deweloperskim - kod odzwierciedla udokumentowane API
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import logging
 import re
@@ -23,6 +26,37 @@ from app.db.models.ops import SyncRun
 log = logging.getLogger("marketing_sync")
 
 LOOKBACK_DAYS = 3  # re-fetch okna D-3…D-1 (platformy korygują metryki wstecz)
+
+# Moduły z opcjonalnego extra "google" (backend/pyproject.toml), potrzebne danej integracji.
+GOOGLE_MODULES = {
+    "ga4": ("google.analytics.data_v1beta", "google.oauth2.service_account"),
+    "google_ads": ("google.ads.googleads.client",),
+}
+GOOGLE_EXTRA_HINT = (
+    "Brak pakietów Google dla tej integracji. Zainstaluj extra \"google\": "
+    "pip install -e \".[google]\" (Docker: BACKEND_EXTRAS=google i ponowny build obrazu) - patrz README."
+)
+
+
+class MissingPackage(Exception):
+    """Integracja jest skonfigurowana, ale brak opcjonalnego pakietu (extra "google")."""
+
+    @classmethod
+    def google(cls, exc: ImportError) -> MissingPackage:
+        return cls(f"{GOOGLE_EXTRA_HINT} Brakujący moduł: {exc.name or exc}.")
+
+
+def _has_module(name: str) -> bool:
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):  # brak pakietu nadrzędnego albo moduł zablokowany
+        return False
+
+
+def missing_google_packages() -> dict[str, str | None]:
+    """Dla GA4 i Google Ads: komunikat o brakujących pakietach albo None, gdy są zainstalowane."""
+    return {source: None if all(_has_module(m) for m in modules) else GOOGLE_EXTRA_HINT
+            for source, modules in GOOGLE_MODULES.items()}
 
 
 def _run(db: DBSession, source: str, fn) -> dict:
@@ -49,6 +83,18 @@ def _run(db: DBSession, source: str, fn) -> dict:
         run.finished_at = datetime.now(timezone.utc)
         db.commit()
         return {"status": "skipped", "source": source, "reason": str(exc)}
+    except MissingPackage as exc:
+        # Poświadczenia są, ale brak SDK - to błąd konfiguracji wdrożenia, widoczny na pulpicie
+        # z instrukcją, a nie ImportError ze śladem stosu.
+        db.rollback()
+        run = db.merge(run)
+        run.status = "error"
+        run.error_class = "MissingPackage"
+        run.error_message = str(exc)[:500]
+        run.finished_at = datetime.now(timezone.utc)
+        db.commit()
+        log.warning("Synchronizacja %s: %s", source, exc)
+        return {"status": "error", "source": source, "message": str(exc)}
     except Exception as exc:  # noqa: BLE001
         db.rollback()
         run = db.merge(run)
@@ -114,9 +160,12 @@ def _ga4_credentials(service_account):
 def _sync_ga4(db: DBSession) -> int:
     if not (settings.ga4_service_account_json and settings.ga4_property_id):
         raise NotConfigured("GA4 nieskonfigurowany")
-    from google.analytics.data_v1beta import BetaAnalyticsDataClient
-    from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest
-    from google.oauth2 import service_account
+    try:
+        from google.analytics.data_v1beta import BetaAnalyticsDataClient
+        from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest
+        from google.oauth2 import service_account
+    except ImportError as exc:
+        raise MissingPackage.google(exc) from None
 
     creds = _ga4_credentials(service_account)
     client = BetaAnalyticsDataClient(credentials=creds)
@@ -243,7 +292,10 @@ def _meta_metric(metrics: dict, name: str) -> int:
 def _sync_google_ads(db: DBSession) -> int:
     if not (settings.google_ads_developer_token and settings.google_ads_customer_id):
         raise NotConfigured("Google Ads nieskonfigurowany")
-    from google.ads.googleads.client import GoogleAdsClient
+    try:
+        from google.ads.googleads.client import GoogleAdsClient
+    except ImportError as exc:
+        raise MissingPackage.google(exc) from None
 
     client = GoogleAdsClient.load_from_dict(
         {

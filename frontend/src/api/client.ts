@@ -355,6 +355,8 @@ export interface IntegrationsConfig {
   email_parser_model: string;
   /** Czy dane osobowe są maskowane (polanon) przed wysłaniem do AI. */
   pii_masking: boolean;
+  /** Komunikat o brakującym extra "google" dla GA4 / Google Ads albo null, gdy pakiety są. */
+  missing_packages: Partial<Record<"ga4" | "google_ads", string | null>>;
 }
 
 /** Maskowanie danych osobowych przed AI (Ustawienia -> Prywatność AI). */

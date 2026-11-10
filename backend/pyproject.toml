@@ -32,6 +32,13 @@ dependencies = [
 ner = [
     "polanon[ner]>=0.2.2",
 ]
+# Integracje GA4 (Data API) i Google Ads. Bez nich panel działa, a skonfigurowana integracja
+# pokazuje komunikat o brakującym pakiecie. Docker: build arg BACKEND_EXTRAS=google.
+google = [
+    "google-analytics-data>=0.18",
+    "google-auth>=2.30",
+    "google-ads>=30.0",
+]
 dev = [
     "pytest>=8.3",
     "ruff>=0.8",

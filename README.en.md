@@ -175,9 +175,16 @@ Secrets live only in `.env` (the panel never shows or edits them). Templates:
 | `IMAP_*` | order mailbox | no e-mail import |
 | `SMTP_*` | e-mail notifications | no notifications |
 | `META_*`, `GOOGLE_ADS_*`, `GA4_*` | marketing channels | no data from that channel |
+| `BACKEND_EXTRAS` (Docker) | optional packages in the backend image: `google`, `ner` or `google,ner` | core only |
 | `CF_ACCESS_*` | optional Cloudflare Access login (JWT verification) | username and password only |
 | `CF_ACCESS_ONLY` | Access is the only way in (no password login); recommended behind a tunnel | `false` |
 | `RAW_EMAIL_RETENTION_DAYS` | after this many days the worker clears the body, HTML and headers of handled e-mails (GDPR) | no automatic clean-up |
+
+The GA4 and Google Ads integrations need optional Google packages (the `google` extra). Locally:
+`pip install -e ".[google]"`. In Docker: `BACKEND_EXTRAS=google` in `deploy/.env`, then
+`docker compose up -d --build`. Without them the rest of the panel works, and a configured
+integration shows a missing-package message in Settings and on the dashboard instead of an
+import error. The Google integrations have not been tested on a live account (see Known limitations).
 
 The configuration status (without secret values) is shown on the **Settings** page.
 
