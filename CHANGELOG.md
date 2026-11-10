@@ -11,6 +11,10 @@ All notable changes to this project are documented here. The format follows
   packages a configured integration reports how to install them instead of an `ImportError`,
   on the dashboard and in Settings.
 
+### Fixed
+- `EMAIL_PARSER_ESCALATION_MODEL` was read by the e-mail parser but missing from the settings,
+  so it could not be set; it is now a documented setting (empty = the chat model).
+
 ### Security
 - Assistant tools fail closed: when the read-only `assistant_ro` session cannot be used, or
   runs as another role, every tool returns an error that points to the README and a warning is

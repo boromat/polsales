@@ -150,9 +150,10 @@ def parse_free_text(
     if data is None:
         return None
 
-    # Eskalacja przy niskiej pewności - mocniejszy model (Opus wg cennika kanonicznego).
+    # Eskalacja przy niskiej pewności - mocniejszy model (EMAIL_PARSER_ESCALATION_MODEL,
+    # domyślnie model czatu).
     if _confidence(data) < ESCALATION_CONFIDENCE:
-        escalation_model = getattr(settings, "email_parser_escalation_model", "") or settings.chat_model
+        escalation_model = settings.email_parser_escalation_model or settings.chat_model
         if escalation_model and escalation_model != settings.email_parser_model:
             log.info("Niska pewność (%.2f) - eskalacja parsera do modelu %s", _confidence(data), escalation_model)
             stronger = _extract(client, escalation_model, user_content, system)

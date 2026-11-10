@@ -169,6 +169,7 @@ Sekrety są wyłącznie w `.env` (panel nigdy ich nie pokazuje ani nie edytuje).
 | `OPENROUTER_API_KEY` / `ANTHROPIC_API_KEY` | dostawca AI | brak czatu i parsera AI; zestawienia regułowe |
 | `AI_BASE_URL` | własny endpoint zgodny z Anthropic API (atrapa, bramka) | domyślny adres dostawcy |
 | `CHAT_MODEL`, `EMAIL_PARSER_MODEL` | modele czatu i parsera | `claude-opus-4-8`, `claude-haiku-4-5` |
+| `EMAIL_PARSER_ESCALATION_MODEL` | model, do którego parser eskaluje przy pewności poniżej 0,5; wartość równa `EMAIL_PARSER_MODEL` wyłącza eskalację | model czatu |
 | `PII_MASKING_ENABLED`, `PII_MASKING_NER` | domyślne ustawienia maskowania | `true`, `false` |
 | `IMAP_*` | skrzynka z zamówieniami | brak pobierania maili |
 | `SMTP_*` | powiadomienia e-mail | brak powiadomień |

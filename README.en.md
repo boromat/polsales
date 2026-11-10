@@ -171,6 +171,7 @@ Secrets live only in `.env` (the panel never shows or edits them). Templates:
 | `OPENROUTER_API_KEY` / `ANTHROPIC_API_KEY` | AI provider | no chat or AI parser; rule-based summaries |
 | `AI_BASE_URL` | custom Anthropic-compatible endpoint (mock, gateway) | the provider's default URL |
 | `CHAT_MODEL`, `EMAIL_PARSER_MODEL` | chat and parser models | `claude-opus-4-8`, `claude-haiku-4-5` |
+| `EMAIL_PARSER_ESCALATION_MODEL` | model the parser escalates to when confidence is below 0.5; the same value as `EMAIL_PARSER_MODEL` turns escalation off | the chat model |
 | `PII_MASKING_ENABLED`, `PII_MASKING_NER` | masking defaults | `true`, `false` |
 | `IMAP_*` | order mailbox | no e-mail import |
 | `SMTP_*` | e-mail notifications | no notifications |

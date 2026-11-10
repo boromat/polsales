@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     # anthropic/claude-opus-4.8). Można też podać pełny slug z ukośnikiem - wtedy bez zmian.
     chat_model: str = "claude-opus-4-8"
     email_parser_model: str = "claude-haiku-4-5"
+    # Model, do którego parser maili eskaluje, gdy tańszy model zwróci pewność poniżej 0,5.
+    # Puste = model czatu (CHAT_MODEL). Ta sama wartość co EMAIL_PARSER_MODEL wyłącza eskalację.
+    email_parser_escalation_model: str = ""
 
     # IMAP (Etap 2)
     imap_host: str = ""
