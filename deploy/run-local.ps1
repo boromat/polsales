@@ -26,6 +26,23 @@ $data = Join-Path $PgRoot "data"
 $log = Join-Path $PgRoot "pg.log"
 $env:DATABASE_URL = "postgresql+psycopg://postgres@127.0.0.1:$Port/$Db"
 
+# Przenośne binaria PostgreSQL z EDB i ich oczekiwana suma SHA256. EDB nie publikuje sum dla
+# tego pliku, a pliki .exe w środku nie są podpisane cyfrowo, więc sumę policzono z pliku
+# pobranego 2026-11-10 (jego binaria są identyczne z wcześniej pobraną kopią). Chroni przed
+# podmianą albo uszkodzeniem pliku po tej dacie. Zmiana wersji = nowa suma.
+$PgZipUrl = "https://get.enterprisedb.com/postgresql/postgresql-16.9-1-windows-x64-binaries.zip"
+$PgZipSha256 = "304EB7DAB70717015C4FD09986122E470D53A57A3A2B443D31E2C1D83D88DB88"
+
+function Assert-Sha256 {
+    # Przerywa skrypt, gdy suma pliku się nie zgadza; taki plik jest usuwany przed rozpakowaniem.
+    param([string]$Path, [string]$Expected)
+    $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash
+    if ($actual -ne $Expected) {
+        Remove-Item -LiteralPath $Path -Force
+        throw "Suma SHA256 pobranego pliku sie nie zgadza (oczekiwana $Expected, jest $actual). Plik usuniety, nic nie zostalo rozpakowane."
+    }
+}
+
 function Stop-Db {
     if (Test-Path (Join-Path $bin "pg_ctl.exe")) {
         & (Join-Path $bin "pg_ctl.exe") -D $data stop -m fast
@@ -39,7 +56,9 @@ if (-not (Test-Path (Join-Path $bin "initdb.exe"))) {
     Write-Host "Pobieram przenośny PostgreSQL 16.9 (~300 MB)..."
     $zip = Join-Path $PgRoot "pg.zip"
     New-Item -ItemType Directory -Force $PgRoot | Out-Null
-    curl.exe -L -s -o $zip "https://get.enterprisedb.com/postgresql/postgresql-16.9-1-windows-x64-binaries.zip"
+    curl.exe -L -s --fail -o $zip $PgZipUrl
+    if ($LASTEXITCODE -ne 0) { throw "Nie udalo sie pobrac $PgZipUrl (curl, kod $LASTEXITCODE)." }
+    Assert-Sha256 -Path $zip -Expected $PgZipSha256
     Expand-Archive -Path $zip -DestinationPath $PgRoot -Force
     Remove-Item $zip
 }

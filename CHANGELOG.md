@@ -17,11 +17,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 - `docs/08-plan-etapow.md` is marked as an archived build plan; the README test counts
-  match the current suite (284 backend, 17 frontend).
+  match the current suite (288 backend, 17 frontend).
 - The Polish number format used by the weekly summary and the recommendations lives in one
   helper, `app/services/text_format.num_pl` (it was duplicated in both services).
 
 ### Security
+- `deploy/run-local.ps1` checks the SHA256 of the PostgreSQL ZIP it downloads (`Get-FileHash`
+  against a pinned value) and stops, deleting the file, before unpacking anything that does not
+  match. A failed download now stops the script too.
 - Assistant conversations belong to the account that started them (migration `0020`; existing
   conversations go to the first account) and the chat API lists and opens only the caller's own.
   Before, every account saw every conversation.

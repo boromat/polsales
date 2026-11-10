@@ -148,7 +148,7 @@ npm run dev                          # http://localhost:5173, proxies /api -> :8
 ```
 
 On Windows without Docker or admin rights, `deploy\run-local.ps1` downloads a portable
-PostgreSQL, creates the venv and the account, and `run.bat` starts everything.
+PostgreSQL (and checks its SHA256), creates the venv and the account, and `run.bat` starts everything.
 
 ### Assistant without an API key (mock model)
 
@@ -192,7 +192,7 @@ The configuration status (without secret values) is shown on the **Settings** pa
 ## Tests and quality
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 284 tests, warnings are errors
+cd backend && ruff check . && pytest -q -W error   # 288 tests, warnings are errors
 cd frontend && npm test && npm run build           # 17 tests, typecheck (app and config), build
 ```
 

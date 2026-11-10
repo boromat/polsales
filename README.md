@@ -145,7 +145,7 @@ npm run dev                          # http://localhost:5173, proxy /api -> :800
 ```
 
 Na Windows bez Dockera i bez uprawnień administratora: `deploy\run-local.ps1` pobiera przenośnego
-PostgreSQL, zakłada venv i konto, a `run.bat` uruchamia całość.
+PostgreSQL (i sprawdza jego sumę SHA256), zakłada venv i konto, a `run.bat` uruchamia całość.
 
 ### Asystent bez klucza API (atrapa modelu)
 
@@ -190,7 +190,7 @@ Stan konfiguracji (bez wartości sekretów) jest widoczny w zakładce **Ustawien
 ## Testy i jakość
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 284 testy, ostrzeżenia traktowane jak błędy
+cd backend && ruff check . && pytest -q -W error   # 288 testów, ostrzeżenia traktowane jak błędy
 cd frontend && npm test && npm run build           # 17 testów, typecheck (aplikacja i konfiguracja), build
 ```
 
