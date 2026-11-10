@@ -18,7 +18,7 @@ pytest.importorskip("polanon")
 anthropic = pytest.importorskip("anthropic")
 
 from app.ai import assistant, privacy  # noqa: E402
-from tests.test_privacy import _events, conversation  # noqa: E402, F401
+from tests.test_privacy import _events  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("mock_llm", Path(__file__).parents[2] / "tools" / "mock_llm.py")
 mock_llm = importlib.util.module_from_spec(_spec)
@@ -44,7 +44,7 @@ def mock_server(monkeypatch):
     server.server_close()
 
 
-def test_streamed_tool_turn_through_the_sdk_sends_tokens_only(monkeypatch, conversation, mock_server):  # noqa: F811
+def test_streamed_tool_turn_through_the_sdk_sends_tokens_only(monkeypatch, conversation, ro_session, mock_server):
     db, conv = conversation
     url, seen = mock_server
     calls = []
@@ -57,7 +57,8 @@ def test_streamed_tool_turn_through_the_sdk_sends_tokens_only(monkeypatch, conve
     monkeypatch.setattr(assistant, "execute_tool", fake_tool)
     client = anthropic.Anthropic(api_key="not-needed", base_url=url, max_retries=0, timeout=10)
     events = _events(list(assistant.run_stream(
-        db, conv, "Jak idzie współpraca z Klub Sportowy Orlik (NIP 123-456-32-18)?", None, client=client,
+        db, conv, "Jak idzie współpraca z Klub Sportowy Orlik (NIP 123-456-32-18)?", None,
+        tool_db=ro_session, client=client,
         masker_factory=lambda _db: privacy.polanon_masker(terms=["Klub Sportowy Orlik", "1234563218"]))))
 
     wire = json.dumps(seen, ensure_ascii=False)

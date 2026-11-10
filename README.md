@@ -58,8 +58,11 @@ widzi prawdziwe nazwy - odtworzone lokalnie, na serwerze.
   dostaje polecenia z panelu przez tabelę `ops.sync_commands`, więc API nigdy nie czeka na IMAP.
 - **Narzędzia asystenta** mają osobną sesję bazy jako rola `assistant_ro` z `statement_timeout`
   10 s i prawem `SELECT` tylko na widokach `analytics.*`. Parametry są walidowane, model nie pisze SQL.
-  Gdy rola nie jest dostępna (np. baza bez migracji), narzędzia wracają do zwykłej sesji
-  z ostrzeżeniem w logu - zapytania i tak dotyczą wyłącznie widoków `analytics.*`.
+  Gdy tej roli nie da się użyć (np. baza bez migracji albo konto bazy bez prawa do przełączenia
+  się na `assistant_ro`), narzędzia są wyłączone: zwracają błąd z odesłaniem do tej sekcji,
+  a w logu jest ostrzeżenie. Asystent nigdy nie przechodzi wtedy na sesję aplikacji z pełnymi
+  uprawnieniami (fail closed). Naprawa: `alembic upgrade head`, a gdy konto aplikacji w bazie
+  nie jest superużytkownikiem, także `GRANT assistant_ro TO <konto_aplikacji>`.
 - **Integracje degradują się łagodnie**: brak klucza oznacza, że dana funkcja jest pomijana,
   a reszta działa (np. bez klucza AI zestawienie tygodniowe liczy się regułami).
 - Decyzje projektowe z uzasadnieniem: [`docs/00-decyzje-kanoniczne.md`](docs/00-decyzje-kanoniczne.md),

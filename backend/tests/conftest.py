@@ -11,9 +11,11 @@ import secrets
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 
-from app.db.base import SessionLocal
+from app.ai import assistant
+from app.db.base import AssistantSessionLocal, SessionLocal
+from app.db.models.chat import Conversation, ToolCallLog
 from app.db.models.ops import User
 from app.main import app
 from app.security import hash_password
@@ -64,3 +66,27 @@ def auth_client() -> TestClient:
     r = c.post("/api/auth/login", json={"username": TEST_USER, "password": TEST_PASS})
     assert r.status_code == 200, r.text
     return c
+
+
+@pytest.fixture()
+def conversation(monkeypatch):
+    """A fresh assistant conversation in the real database, removed after the test."""
+    monkeypatch.setattr(assistant, "is_available", lambda: True)
+    db = SessionLocal()
+    conv = Conversation()
+    db.add(conv)
+    db.commit()
+    yield db, conv
+    db.rollback()
+    db.execute(delete(ToolCallLog).where(ToolCallLog.conversation_id == conv.id))
+    db.execute(delete(Conversation).where(Conversation.id == conv.id))
+    db.commit()
+    db.close()
+
+
+@pytest.fixture()
+def ro_session():
+    """The assistant's read-only session (assistant_ro); tools refuse to run without it."""
+    s = AssistantSessionLocal()
+    yield s
+    s.close()

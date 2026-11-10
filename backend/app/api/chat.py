@@ -79,8 +79,8 @@ def send_message(conv_id: uuid.UUID, data: SendIn = Body(...)) -> StreamingRespo
     def event_gen():
         db = SessionLocal()
         # Osobna sesja read-only (assistant_ro) dla zapytań narzędzi (decyzja #9). Tworzenie sesji
-        # jest leniwe - ewentualny brak roli ujawni się dopiero przy zapytaniu, gdzie run_stream ma
-        # graceful fallback na zwykłą sesję. Historię czatu (chat.*) obsługuje zawsze `db`.
+        # jest leniwe - ewentualny brak roli ujawni się dopiero przy zapytaniu, a wtedy run_stream
+        # wyłącza narzędzia (fail closed). Historię czatu (chat.*) obsługuje zawsze `db`.
         try:
             tool_db = AssistantSessionLocal()
         except Exception:  # noqa: BLE001

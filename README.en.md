@@ -60,8 +60,11 @@ The UI and the domain language are Polish (the target market); code comments mix
   panel sends commands to the worker through `ops.sync_commands`, so the API never waits on IMAP.
 - **Assistant tools** use a separate database session as `assistant_ro`, with a 10 s
   `statement_timeout` and `SELECT` only on `analytics.*` views. Parameters are validated.
-  If the role is not available (e.g. a database without migrations), the tools fall back to
-  the regular session with a warning in the log; the queries still read `analytics.*` only.
+  If that role cannot be used (e.g. a database without migrations, or a database account that
+  cannot switch to `assistant_ro`), the tools are off: they return an error that points to this
+  section, and a warning goes to the log. The assistant never falls back to the application's
+  full-privilege session (fail closed). Fix: `alembic upgrade head`, and when the application's
+  database account is not a superuser, also `GRANT assistant_ro TO <app_account>`.
 - **Integrations degrade gracefully**: a missing key turns off one feature, the rest keeps
   working (e.g. without an AI key the weekly summary is rule-based).
 - Design decisions and their reasons (Polish): [`docs/00-decyzje-kanoniczne.md`](docs/00-decyzje-kanoniczne.md),

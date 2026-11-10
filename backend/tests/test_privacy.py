@@ -15,7 +15,7 @@ from sqlalchemy import delete, select
 
 from app.ai import assistant, privacy
 from app.db.base import SessionLocal
-from app.db.models.chat import Conversation, Message, ToolCallLog
+from app.db.models.chat import Message, ToolCallLog
 from app.db.models.mail import Email
 from app.db.models.settings import AppSetting
 from app.services import email_parser_ai, email_pipeline, privacy_settings, recommendations, weekly_summary
@@ -188,22 +188,7 @@ def _events(raw: list[str]) -> list[tuple[str, dict]]:
     return out
 
 
-@pytest.fixture()
-def conversation(monkeypatch):
-    monkeypatch.setattr(assistant, "is_available", lambda: True)
-    db = SessionLocal()
-    conv = Conversation()
-    db.add(conv)
-    db.commit()
-    yield db, conv
-    db.rollback()
-    db.execute(delete(ToolCallLog).where(ToolCallLog.conversation_id == conv.id))
-    db.execute(delete(Conversation).where(Conversation.id == conv.id))
-    db.commit()
-    db.close()
-
-
-def test_model_never_sees_real_values(monkeypatch, conversation):
+def test_model_never_sees_real_values(monkeypatch, conversation, ro_session):
     db, conv = conversation
     # an earlier turn with personal data, already stored (real values) in the database
     db.add(Message(conversation_id=conv.id, role="user",
@@ -224,7 +209,7 @@ def test_model_never_sees_real_values(monkeypatch, conversation):
         (_resp([_text("Najlepszy klient: <FIRMA_1>, kontakt <OSOBA_1>.")]),
          ["Najlepszy klient: <FIR", "MA_1>, kontakt <OSO", "BA_1>."]),
     )
-    raw = list(assistant.run_stream(db, conv, "Pokaż profil firmy z NIP 1234563218", None,
+    raw = list(assistant.run_stream(db, conv, "Pokaż profil firmy z NIP 1234563218", None, tool_db=ro_session,
                                     client=client, masker_factory=lambda _db: make_masker()))
     events = _events(raw)
 
@@ -264,7 +249,7 @@ def test_masking_unavailable_sends_nothing(conversation):
     assert "Nic nie zostało wysłane" in events[0][1]["message_pl"]
 
 
-def test_failure_while_masking_a_tool_result_stops_before_next_call(monkeypatch, conversation):
+def test_failure_while_masking_a_tool_result_stops_before_next_call(monkeypatch, conversation, ro_session):
     db, conv = conversation
 
     def flaky(text, mapping):
@@ -276,7 +261,7 @@ def test_failure_while_masking_a_tool_result_stops_before_next_call(monkeypatch,
     client = FakeClient((_resp([_tool("orders_summary", {})], "tool_use"), []),
                         (_resp([_text("nie powinno dojść")]), []))
     events = _events(list(assistant.run_stream(
-        db, conv, "podsumuj", None, client=client,
+        db, conv, "podsumuj", None, tool_db=ro_session, client=client,
         masker_factory=lambda _db: privacy.Masker(anonymize=flaky))))
     assert len(client.requests) == 1  # the tool result never went out
     assert events[-1][0] == "error" and events[-1][1]["code"] == "masking_unavailable"

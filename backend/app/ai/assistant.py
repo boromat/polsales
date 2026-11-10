@@ -113,23 +113,44 @@ def _load_history(db: DBSession, conversation_id) -> list[dict]:
     return msgs
 
 
-def _resolve_tool_session(tool_db: DBSession | None, fallback: DBSession) -> DBSession:
-    """Sesja do zapytań NARZĘDZI (decyzja #9): read-only assistant_ro, z graceful fallbackiem.
+READ_ONLY_ROLE = "assistant_ro"
 
-    Sondujemy połączenie 'SELECT 1' - jeśli rola/uprawnienia są niedostępne, wracamy na zwykłą
-    sesję (zapytania i tak są wyłącznie na analytics.* i parametryzowane)."""
+# Wynik każdego narzędzia, gdy sesja tylko do odczytu jest niedostępna. Trafia do modelu jako
+# błąd narzędzia, więc model przekazuje go użytkownikowi zamiast liczb.
+TOOLS_UNAVAILABLE_PL = (
+    "Narzędzia asystenta są wyłączone: sesja tylko do odczytu (rola bazy assistant_ro) jest "
+    "niedostępna, a asystent nie używa zamiast niej sesji z pełnymi uprawnieniami. Uruchom "
+    "migracje (alembic upgrade head) i sprawdź, czy konto bazy może przełączyć się na rolę "
+    "assistant_ro - patrz README, sekcja \"Architektura\"."
+)
+
+
+def _resolve_tool_session(tool_db: DBSession | None) -> DBSession | None:
+    """Sesja do zapytań NARZĘDZI (decyzja #9): wyłącznie rola assistant_ro, fail closed.
+
+    Sondujemy połączenie zapytaniem o `current_user`. Gdy sesji nie ma, połączenie z rolą się nie
+    udaje (brak roli, brak prawa do SET ROLE, baza bez migracji) albo sesja działa jako inna rola,
+    zwracamy None: narzędzia oddają wtedy błąd. Nigdy nie przechodzimy na zwykłą sesję aplikacji,
+    która ma pełne uprawnienia do bazy."""
     if tool_db is None:
-        return fallback
+        log.warning("Brak sesji read-only asystenta - narzędzia wyłączone (fail closed).")
+        return None
     try:
-        tool_db.execute(text("SELECT 1"))
-        return tool_db
+        role = tool_db.execute(text("SELECT current_user")).scalar()
     except Exception:  # noqa: BLE001 - brak roli/uprawnień, brak połączenia itp.
-        log.warning("Sesja read-only asystenta niedostępna - fallback na zwykłą sesję.", exc_info=True)
+        log.warning("Sesja read-only asystenta (%s) niedostępna - narzędzia wyłączone (fail closed).",
+                    READ_ONLY_ROLE, exc_info=True)
         try:
             tool_db.rollback()
         except Exception:  # noqa: BLE001, S110 - rollback po błędzie, sam błąd zalogowany wyżej
             pass
-        return fallback
+        return None
+    if role != READ_ONLY_ROLE:
+        log.warning("Sesja narzędzi asystenta działa jako rola %r zamiast %s - narzędzia wyłączone "
+                    "(fail closed).", role, READ_ONLY_ROLE)
+        tool_db.rollback()
+        return None
+    return tool_db
 
 
 def strip_context(text_value: str) -> str:
@@ -169,8 +190,9 @@ def run_stream(db: DBSession, conversation: Conversation, user_text: str, view_c
                masker_factory: Callable[[DBSession], privacy.Masker | None] = build_masker):
     """Generator zdarzeń SSE jednej tury czatu. Zapisuje wiadomości do bazy. Degraduje bez klucza API.
 
-    `tool_db` (opcjonalny) to sesja read-only (assistant_ro) do zapytań narzędzi; historię czatu
-    zapisujemy zawsze zwykłą sesją `db`. Brak `tool_db` = narzędzia korzystają z `db`.
+    `tool_db` to sesja read-only (assistant_ro) do zapytań narzędzi; historię czatu zapisujemy
+    zawsze zwykłą sesją `db`. Brak `tool_db` albo sesja, która nie działa jako assistant_ro,
+    oznacza, że narzędzia zwracają błąd (fail closed) - nigdy nie dostają sesji `db`.
 
     Maskowanie (gdy włączone w Ustawieniach): `masker_factory` buduje masker na całą turę.
     Do modelu idą tylko tokeny (pytanie, historia, wyniki narzędzi); argumenty narzędzi
@@ -239,7 +261,10 @@ def _loop(db: DBSession, conversation: Conversation, client, model: str, system_
     `messages` to wersja dla modelu (zamaskowana, gdy jest masker); do bazy trafia wersja
     z prawdziwymi wartościami.
     """
-    tool_session: DBSession | None = None  # rozwiązywana leniwie przy pierwszym użyciu narzędzia
+    # Sesja narzędzi rozwiązywana leniwie przy pierwszym użyciu narzędzia; None po sprawdzeniu
+    # oznacza, że narzędzia są wyłączone (fail closed).
+    tool_session: DBSession | None = None
+    tools_checked = False
     for _ in range(MAX_ITERATIONS):
         restorer = masker.stream_restorer() if masker else None
         try:
@@ -290,16 +315,20 @@ def _loop(db: DBSession, conversation: Conversation, client, model: str, system_
                                 "labels": masker.labels() if masker else {}})
             return
 
-        # Wykonaj narzędzia - na sesji read-only (decyzja #9), z jednorazowym rozwiązaniem + fallbackiem.
-        if tool_session is None:
-            tool_session = _resolve_tool_session(tool_db, db)
+        # Wykonaj narzędzia - wyłącznie na sesji read-only (decyzja #9), sprawdzanej raz na turę.
+        if not tools_checked:
+            tool_session = _resolve_tool_session(tool_db)
+            tools_checked = True
         results_for_model, results_for_db = [], []
         for block in final.content:
             if getattr(block, "type", None) != "tool_use":
                 continue
             yield _sse("tool_call", {"name": block.name})
             args = masker.restore_data(block.input) if masker else block.input
-            result, is_error, ms = _run_tool(tool_session, db, block.name, args)
+            if tool_session is None:
+                result, is_error, ms = {"error": TOOLS_UNAVAILABLE_PL}, True, 0.0
+            else:
+                result, is_error, ms = _run_tool(tool_session, block.name, args)
             db.add(ToolCallLog(conversation_id=conversation.id, tool_name=block.name,
                                params=args, ms=round(ms, 2)))
             db.commit()
@@ -322,8 +351,10 @@ def _loop(db: DBSession, conversation: Conversation, client, model: str, system_
     yield _sse("error", {"code": "max_iterations", "message_pl": "Przekroczono limit iteracji narzędzi."})
 
 
-def _run_tool(tool_session: DBSession, db: DBSession, name: str, args: dict) -> tuple[dict, bool, float]:
-    """Wykonuje jedno narzędzie. Zwraca (wynik, czy_błąd, czas_ms); błąd narzędzia nie przerywa tury."""
+def _run_tool(tool_session: DBSession, name: str, args: dict) -> tuple[dict, bool, float]:
+    """Wykonuje jedno narzędzie na sesji read-only. Zwraca (wynik, czy_błąd, czas_ms).
+
+    Błąd narzędzia nie przerywa tury - trafia do modelu jako wynik z `is_error`."""
     t0 = time.monotonic()
     try:
         return execute_tool(tool_session, name, args), False, (time.monotonic() - t0) * 1000
@@ -333,13 +364,11 @@ def _run_tool(tool_session: DBSession, db: DBSession, name: str, args: dict) -> 
         log.exception("Błąd narzędzia %s", name)
         return {"error": f"Błąd wewnętrzny: {exc}"}, True, (time.monotonic() - t0) * 1000
     finally:
-        # Read-only sesja: zamknij transakcję po każdym narzędziu (zwolnij snapshot,
-        # wyczyść ewentualny abort). Zwykłej sesji `db` nie ruszamy - trzyma zapisy czatu.
-        if tool_session is not db:
-            try:
-                tool_session.rollback()
-            except Exception:  # noqa: BLE001, S110 - rollback sesji tylko do odczytu
-                pass
+        # Zamknij transakcję po każdym narzędziu (zwolnij snapshot, wyczyść ewentualny abort).
+        try:
+            tool_session.rollback()
+        except Exception:  # noqa: BLE001, S110 - rollback sesji tylko do odczytu
+            pass
 
 
 def _block_to_dict(block) -> dict:

@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Security
+- Assistant tools fail closed: when the read-only `assistant_ro` session cannot be used, or
+  runs as another role, every tool returns an error that points to the README and a warning is
+  logged. Before, the tools silently fell back to the application's full-privilege session.
+
 ## [1.0.0] - 2026-11-09
 
 First public release.

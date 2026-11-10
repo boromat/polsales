@@ -31,8 +31,9 @@ You will get an answer within 7 days. Fixes are released as a new version and no
   creates accounts on its own, and throttles key refreshes. With `CF_ACCESS_ONLY=true` password
   login is off, so Access cannot be bypassed through the server's direct address.
 - The AI assistant is read-only: its tools run as a separate database role (`assistant_ro`)
-  that can only `SELECT` from `analytics.*` views, with a statement timeout (if the role is
-  missing they fall back to the regular session with a logged warning). The model never writes SQL;
+  that can only `SELECT` from `analytics.*` views, with a statement timeout. If that role cannot
+  be used, the tools are off and return an error; they never fall back to the application's
+  full-privilege session (fail closed). The model never writes SQL;
   row limits and argument types are enforced on the server.
 - Containers: the API and worker run as a non-root user; the database and API ports are not
   published, only Caddy is.

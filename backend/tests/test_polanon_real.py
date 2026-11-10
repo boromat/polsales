@@ -14,7 +14,7 @@ pytest.importorskip("polanon")
 
 from app.ai import assistant, privacy  # noqa: E402
 from app.services import email_parser_ai  # noqa: E402
-from tests.test_privacy import FakeClient, _events, _resp, _text, _tool, conversation  # noqa: E402, F401
+from tests.test_privacy import FakeClient, _events, _resp, _text, _tool  # noqa: E402
 
 TEXT = (
     "Klient Anna Testowa (anna.testowa@orlik.example, tel. 500 000 001) z firmy z NIP 1234563218 "
@@ -58,7 +58,7 @@ def test_client_named_like_a_public_brand_is_still_masked():
     assert "Allegro" not in m.mask("Zaległa faktura: Allegro Sport Team, termin piątek.")
 
 
-def test_full_assistant_loop_with_polanon(monkeypatch, conversation):  # noqa: F811
+def test_full_assistant_loop_with_polanon(monkeypatch, conversation, ro_session):
     db, conv = conversation
     seen = []
 
@@ -84,7 +84,7 @@ def test_full_assistant_loop_with_polanon(monkeypatch, conversation):  # noqa: F
 
     client = TokenEchoClient()
     events = _events(list(assistant.run_stream(
-        db, conv, "Pokaż firmę z NIP 1234563218", None, client=client,
+        db, conv, "Pokaż firmę z NIP 1234563218", None, tool_db=ro_session, client=client,
         masker_factory=lambda _db: privacy.polanon_masker(terms=["Klub Sportowy Orlik", "1234563218"]))))
 
     sent = client.sent_text()

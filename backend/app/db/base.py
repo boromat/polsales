@@ -22,7 +22,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 # Osobny silnik TYLKO-DO-ODCZYTU dla narzędzi asystenta AI (decyzja #9): łączy się jako
 # rola assistant_ro (SELECT wyłącznie na analytics.*) z twardym statement_timeout=10 s.
 # Połączenie jest leniwe - jeśli rola/uprawnienia są niedostępne, błąd pojawi się dopiero
-# przy pierwszym zapytaniu narzędzia; warstwa narzędzi ma fallback na zwykłą sesję.
+# przy pierwszym zapytaniu narzędzia, a asystent wyłącza wtedy narzędzia (fail closed).
 assistant_engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
