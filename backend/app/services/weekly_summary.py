@@ -19,6 +19,7 @@ from app.config import settings
 from app.db.models.weekly import WeeklySummary
 from app.services.marketing import ad_format_ranking, funnel
 from app.services.privacy_settings import build_masker
+from app.services.text_format import num_pl
 
 log = logging.getLogger("weekly")
 
@@ -113,11 +114,6 @@ def aggregate_week(db: DBSession, start: date, end: date, prev_start: date, prev
     }
 
 
-def _pl(v: float, digits: int = 2) -> str:
-    """Liczba po polsku (przecinek dziesiętny) - narracja trafia do panelu, PDF-a i maila."""
-    return f"{float(v):.{digits}f}".replace(".", ",")
-
-
 def _pl_date(iso: str) -> str:
     """ISO 'YYYY-MM-DD' → 'DD.MM.YYYY' (w narracji nigdy nie pokazujemy dat ISO)."""
     try:
@@ -131,23 +127,23 @@ def _baseline_narrative(agg: dict) -> tuple[str, str]:
     chg = agg["revenue_change_pct"]
     trend = ("wzrost" if (chg or 0) > 0 else "spadek" if (chg or 0) < 0 else "bez zmian")
     headline = (f"Tydzień {_pl_date(agg['week_start'])}-{_pl_date(agg['week_end'])}: "
-                f"{_pl(r)} zł netto ({agg['orders_count']} zam.)")
-    rev_wow = f" ({trend} {_pl(abs(chg), 1)}% WoW)" if chg is not None else ""
-    ord_wow = f" ({_pl(agg['orders_change_pct'], 1)}% WoW)" if agg["orders_change_pct"] is not None else ""
-    lines = [f"Przychód netto: {_pl(r)} zł{rev_wow}.",
+                f"{num_pl(r)} zł netto ({agg['orders_count']} zam.)")
+    rev_wow = f" ({trend} {num_pl(abs(chg), 1)}% WoW)" if chg is not None else ""
+    ord_wow = f" ({num_pl(agg['orders_change_pct'], 1)}% WoW)" if agg["orders_change_pct"] is not None else ""
+    lines = [f"Przychód netto: {num_pl(r)} zł{rev_wow}.",
              f"Zamówienia: {agg['orders_count']}{ord_wow}."]
     if agg["avg_order_value_net"] is not None:
-        lines.append(f"Średnia wartość zamówienia: {_pl(agg['avg_order_value_net'])} zł netto.")
+        lines.append(f"Średnia wartość zamówienia: {num_pl(agg['avg_order_value_net'])} zł netto.")
     if agg["avg_lead_time_days"] is not None:
-        lines.append(f"Średni czas kontakt→sprzedaż: {_pl(agg['avg_lead_time_days'], 1)} dni.")
+        lines.append(f"Średni czas kontakt→sprzedaż: {num_pl(agg['avg_lead_time_days'], 1)} dni.")
     if agg["roas"] is not None:
-        lines.append(f"Wydatki reklamowe: {_pl(agg['ad_spend'])} zł, ROAS (płatne): {_pl(agg['roas'])}×.")
+        lines.append(f"Wydatki reklamowe: {num_pl(agg['ad_spend'])} zł, ROAS (płatne): {num_pl(agg['roas'])}×.")
     if agg["top_product"]:
         tp = agg["top_product"]
-        lines.append(f"Najlepszy produkt: „{tp['name']}” ({_pl(tp['revenue_net'])} zł).")
+        lines.append(f"Najlepszy produkt: „{tp['name']}” ({num_pl(tp['revenue_net'])} zł).")
     if agg["top_channel"]:
         tc = agg["top_channel"]
-        lines.append(f"Najlepszy kanał: {tc['channel']} ({_pl(tc['revenue_net'])} zł).")
+        lines.append(f"Najlepszy kanał: {tc['channel']} ({num_pl(tc['revenue_net'])} zł).")
     if agg["best_ad_format"]:
         bf = agg["best_ad_format"]
         lines.append(f"Najskuteczniejszy format: {bf['format']} ({bf['platform']}).")

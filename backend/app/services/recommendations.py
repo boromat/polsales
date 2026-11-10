@@ -22,6 +22,7 @@ from app.ai.client import build_client, structured_json
 from app.config import settings
 from app.db.models.recommendations import Recommendation
 from app.services.privacy_settings import build_masker
+from app.services.text_format import num_pl
 
 log = logging.getLogger("recommendations")
 
@@ -203,9 +204,9 @@ def _baseline_recommendations(agg: dict) -> list[dict]:
             recs.append({
                 "category": "budget_allocation",
                 "subject": f"kanał {best['name']}",
-                "title": f"{best['name']} ma najlepszy ROAS ({_pl(best['roas'])})",
-                "body": f"Kanał {best['name']} zwrócił {_pl(best['roas'])}× wydatków "
-                        f"({_pl(best['revenue_net'])} zł przychodu przy {_pl(best['spend'])} zł kosztu). "
+                "title": f"{best['name']} ma najlepszy ROAS ({num_pl(best['roas'])})",
+                "body": f"Kanał {best['name']} zwrócił {num_pl(best['roas'])}× wydatków "
+                        f"({num_pl(best['revenue_net'])} zł przychodu przy {num_pl(best['spend'])} zł kosztu). "
                         f"Rozważ zwiększenie budżetu tego kanału.",
                 "confidence": "medium",
                 "supporting_metrics": [
@@ -219,10 +220,10 @@ def _baseline_recommendations(agg: dict) -> list[dict]:
             recs.append({
                 "category": "budget_allocation",
                 "subject": f"kanał {worst['name']}",
-                "title": f"{worst['name']}: ROAS poniżej 1 ({_pl(worst['roas'])})",
+                "title": f"{worst['name']}: ROAS poniżej 1 ({num_pl(worst['roas'])})",
                 "body": f"Kanał {worst['name']} kosztuje więcej niż przynosi przychodu "
-                        f"(ROAS {_pl(worst['roas'])}, {_pl(worst['revenue_net'])} zł przychodu "
-                        f"przy {_pl(worst['spend'])} zł kosztu). "
+                        f"(ROAS {num_pl(worst['roas'])}, {num_pl(worst['revenue_net'])} zł przychodu "
+                        f"przy {num_pl(worst['spend'])} zł kosztu). "
                         f"Ogranicz budżet lub zoptymalizuj kampanie przed dalszymi wydatkami.",
                 "confidence": "medium",
                 "supporting_metrics": [
@@ -236,7 +237,7 @@ def _baseline_recommendations(agg: dict) -> list[dict]:
             "category": "product",
             "subject": f"produkt {p['name']}",
             "title": f"„{p['name']}” to najlepiej sprzedający się produkt",
-            "body": f"Produkt „{p['name']}” wygenerował {_pl(p['revenue_net'])} zł przychodu netto w okresie. "
+            "body": f"Produkt „{p['name']}” wygenerował {num_pl(p['revenue_net'])} zł przychodu netto w okresie. "
                     f"Rozważ jego ekspozycję w reklamach i treściach.",
             "confidence": "high",
             "supporting_metrics": [{"metric": "revenue_net", "value": p["revenue_net"], "product": p["name"]}],
@@ -261,11 +262,6 @@ def _feedback_summary(db: DBSession) -> str:
         "(unikaj powtarzania tych tez i kategorii, chyba że dane wyraźnie je teraz uzasadniają):\n"
         + lines
     )
-
-
-def _pl(v, digits: int = 2) -> str:
-    """Liczba po polsku (przecinek dziesiętny) - treść rekomendacji trafia do panelu i do AI."""
-    return "-" if v is None else f"{float(v):.{digits}f}".replace(".", ",")
 
 
 def _ai_recommendations(agg: dict, feedback_note: str = "",

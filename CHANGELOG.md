@@ -15,6 +15,10 @@ All notable changes to this project are documented here. The format follows
 - `EMAIL_PARSER_ESCALATION_MODEL` was read by the e-mail parser but missing from the settings,
   so it could not be set; it is now a documented setting (empty = the chat model).
 
+### Changed
+- The Polish number format used by the weekly summary and the recommendations lives in one
+  helper, `app/services/text_format.num_pl` (it was duplicated in both services).
+
 ### Security
 - Assistant conversations belong to the account that started them (migration `0020`; existing
   conversations go to the first account) and the chat API lists and opens only the caller's own.
