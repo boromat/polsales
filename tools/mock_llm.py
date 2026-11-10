@@ -21,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 TOKEN_RE = re.compile(r"<[A-Z][A-Z_]*_\d+>")
 NIP_RE = re.compile(r"<NIP_\d+>|\b\d{3}-?\d{3}-?\d{2}-?\d{2}\b")
+TOOL_OPEN, TOOL_CLOSE = "<wynik_narzedzia>\n", "\n</wynik_narzedzia>"
 
 
 def _text_of(message: dict) -> str:
@@ -28,6 +29,13 @@ def _text_of(message: dict) -> str:
     if isinstance(content, str):
         return content
     return "\n".join(b.get("text", "") for b in content or [] if isinstance(b, dict) and b.get("type") == "text")
+
+
+def _tool_payload(raw):
+    """The panel sends every tool result between <wynik_narzedzia> tags (data, not instructions)."""
+    if isinstance(raw, str) and raw.startswith(TOOL_OPEN) and raw.endswith(TOOL_CLOSE):
+        return raw[len(TOOL_OPEN):-len(TOOL_CLOSE)]
+    return raw
 
 
 def _question(text: str) -> str:
@@ -69,7 +77,7 @@ def decide(body: dict) -> list[dict]:
     last = messages[-1] if messages else {"role": "user", "content": ""}
     content = last.get("content")
     if isinstance(content, list) and content and content[0].get("type") == "tool_result":
-        raw = content[0].get("content")
+        raw = _tool_payload(content[0].get("content"))
         try:
             result = json.loads(raw) if isinstance(raw, str) else {}
         except ValueError:

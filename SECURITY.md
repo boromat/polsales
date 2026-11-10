@@ -35,6 +35,10 @@ You will get an answer within 7 days. Fixes are released as a new version and no
   be used, the tools are off and return an error; they never fall back to the application's
   full-privilege session (fail closed). The model never writes SQL;
   row limits and argument types are enforced on the server.
+- Prompt injection: e-mail content and every assistant tool result reach the model between data
+  tags (`<dane_maila>`, `<wynik_narzedzia>`) that the system prompts mark as data, not
+  instructions; the same tag inside the text is defused. An e-mail can only produce a draft for
+  manual review, never an order. Tags reduce the risk, they do not remove it.
 - Containers: the API and worker run as a non-root user; the database and API ports are not
   published, only Caddy is.
 - Secrets that can appear in error messages (API tokens, the GA4 service account key) are

@@ -63,6 +63,12 @@ widzi prawdziwe nazwy - odtworzone lokalnie, na serwerze.
   a w logu jest ostrzeżenie. Asystent nigdy nie przechodzi wtedy na sesję aplikacji z pełnymi
   uprawnieniami (fail closed). Naprawa: `alembic upgrade head`, a gdy konto aplikacji w bazie
   nie jest superużytkownikiem, także `GRANT assistant_ro TO <konto_aplikacji>`.
+- **Treść z zewnątrz to dla modelu dane, nie polecenia.** Parser AI dostaje nadawcę, temat i treść
+  maila w znacznikach `<dane_maila>`, a asystent każdy wynik narzędzia w `<wynik_narzedzia>`
+  (także z historii rozmowy). Oba system prompty mówią, że treści znaczników nie wolno wykonywać.
+  Ten sam znacznik wewnątrz treści jest rozbrajany, więc mail nie zamknie bloku danych.
+  Zamówienie z maila nie zapisuje się samo: powstaje szkic do ręcznej weryfikacji, a ceny
+  wpisuje dopiero osoba, która go zatwierdza.
 - **Integracje degradują się łagodnie**: brak klucza oznacza, że dana funkcja jest pomijana,
   a reszta działa (np. bez klucza AI zestawienie tygodniowe liczy się regułami).
 - Decyzje projektowe z uzasadnieniem: [`docs/00-decyzje-kanoniczne.md`](docs/00-decyzje-kanoniczne.md),
@@ -190,7 +196,7 @@ Stan konfiguracji (bez wartości sekretów) jest widoczny w zakładce **Ustawien
 ## Testy i jakość
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 288 testów, ostrzeżenia traktowane jak błędy
+cd backend && ruff check . && pytest -q -W error   # 296 testów, ostrzeżenia traktowane jak błędy
 cd frontend && npm test && npm run build           # 17 testów, typecheck (aplikacja i konfiguracja), build
 ```
 
@@ -205,6 +211,8 @@ Testy backendu wymagają PostgreSQL (`DATABASE_URL`). Maskowanie ma trzy warstwy
   sprawdza, że żądania wychodzące z serwera zawierają wyłącznie tokeny.
 - `tests/test_security.py` - poprawki z przeglądu bezpieczeństwa: CSRF, limit ciała żądania,
   limity logowania, tryb tylko Cloudflare Access, czyszczenie sekretów z komunikatów błędów.
+- `tests/test_prompt_injection.py` - mail z wstrzykniętym poleceniem i wynik narzędzia z takim
+  tekstem trafiają do modelu w znacznikach danych, także z maskowaniem i z historii rozmowy.
 
 CI (GitHub Actions) na Linux i Windows: ruff (także reguły bezpieczeństwa), migracje na czystej bazie PostgreSQL, testy backendu
 (z polanon), testy i build frontendu.
@@ -250,6 +258,10 @@ polsales/
   dostępu do API; w repozytorium są testowane na danych przykładowych, nie na żywych kontach.
 - Heurystyka atrybucji GA4 dla zamówień z maili wymaga żywego ruchu i nie jest jeszcze
   skalibrowana; zamówienia telefoniczne i mailowe często nie mają pewnego źródła.
+- Znaczniki danych zmniejszają ryzyko prompt injection, ale go nie usuwają: model wciąż może
+  posłuchać polecenia z maila albo z nazwy produktu. Skutki ogranicza ręczna weryfikacja szkiców
+  i narzędzia tylko do odczytu. Rekomendacje i zestawienie tygodniowe wysyłają modelowi agregaty
+  z nazwami produktów i firm jeszcze bez takich znaczników.
 - Rola `assistant_ro` ogranicza narzędzia asystenta przez `SET ROLE` na połączeniu aplikacji, które
   w Docker Compose jest kontem właściciela bazy. Narzędzia nie wykonują dowolnego SQL, więc nie da
   się tej roli porzucić, ale pełna separacja wymagałaby osobnego konta bazy z logowaniem.

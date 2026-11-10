@@ -13,7 +13,7 @@ import pytest
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
-from app.ai import assistant
+from app.ai import assistant, untrusted
 from app.config import settings
 from app.db.base import AssistantSessionLocal, SessionLocal
 from app.db.models.chat import ToolCallLog
@@ -60,7 +60,7 @@ def _assert_failed_closed(client, events, tool_calls, caplog):
     results = _tool_results_sent(client)
     assert len(results) == 2 and all(r["is_error"] for r in results)
     for r in results:
-        message = json.loads(r["content"])["error"]
+        message = json.loads(untrusted.unwrap(untrusted.TOOL_RESULT_TAG, r["content"]))["error"]
         assert message == assistant.TOOLS_UNAVAILABLE_PL
         assert "assistant_ro" in message and "README" in message
     assert any("fail closed" in rec.getMessage() for rec in caplog.records if rec.levelno == logging.WARNING)

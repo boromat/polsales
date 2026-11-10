@@ -65,6 +65,12 @@ The UI and the domain language are Polish (the target market); code comments mix
   section, and a warning goes to the log. The assistant never falls back to the application's
   full-privilege session (fail closed). Fix: `alembic upgrade head`, and when the application's
   database account is not a superuser, also `GRANT assistant_ro TO <app_account>`.
+- **Outside text is data for the model, not instructions.** The AI parser gets the sender,
+  subject and body of an e-mail between `<dane_maila>` tags, and the assistant gets every tool
+  result between `<wynik_narzedzia>` tags (also from the conversation history). Both system
+  prompts say the content of these tags must not be followed. The same tag inside the text is
+  defused, so an e-mail cannot close the data block. An order from an e-mail never saves itself:
+  it becomes a draft for manual review, and prices are entered by the person who approves it.
 - **Integrations degrade gracefully**: a missing key turns off one feature, the rest keeps
   working (e.g. without an AI key the weekly summary is rule-based).
 - Design decisions and their reasons (Polish): [`docs/00-decyzje-kanoniczne.md`](docs/00-decyzje-kanoniczne.md),
@@ -192,7 +198,7 @@ The configuration status (without secret values) is shown on the **Settings** pa
 ## Tests and quality
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 288 tests, warnings are errors
+cd backend && ruff check . && pytest -q -W error   # 296 tests, warnings are errors
 cd frontend && npm test && npm run build           # 17 tests, typecheck (app and config), build
 ```
 
@@ -207,6 +213,8 @@ Backend tests need PostgreSQL (`DATABASE_URL`). Masking is tested at three level
   that requests leaving the server contain tokens only.
 - `tests/test_security.py` - fixes from the security review: CSRF, request body limit, login
   limits, Cloudflare Access only mode, secrets scrubbed from error messages.
+- `tests/test_prompt_injection.py` - an e-mail with an injected command and a tool result with
+  such text reach the model between data tags, also with masking on and from the history.
 
 CI (GitHub Actions) on Linux and Windows: ruff (incl. security rules), migrations on a clean PostgreSQL, backend tests
 (with polanon), frontend tests and build.
@@ -252,6 +260,10 @@ polsales/
   repository they are tested on sample data, not live accounts.
 - The GA4 attribution heuristic for e-mail orders needs live traffic and is not calibrated yet;
   phone and e-mail orders often have no reliable source.
+- Data tags reduce the risk of prompt injection but do not remove it: the model can still follow
+  a command from an e-mail or a product name. Manual review of drafts and read-only tools limit
+  the damage. Recommendations and the weekly summary send the model aggregates with product and
+  company names without such tags yet.
 - The `assistant_ro` role restricts the assistant's tools through `SET ROLE` on the application's
   connection, which in Docker Compose is the database owner. The tools never run arbitrary SQL, so
   the role cannot be dropped, but full separation would need a separate login role.

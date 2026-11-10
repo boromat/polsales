@@ -22,6 +22,11 @@ All notable changes to this project are documented here. The format follows
   helper, `app/services/text_format.num_pl` (it was duplicated in both services).
 
 ### Security
+- Prompt injection: the AI e-mail parser gets the sender, subject and body between
+  `<dane_maila>` tags, and the assistant gets every tool result (also from history) between
+  `<wynik_narzedzia>` tags. Both system prompts say the tagged content is data, not
+  instructions, and the same tag inside the text is defused so it cannot close the block.
+  The database still stores tool results as plain JSON.
 - `deploy/run-local.ps1` checks the SHA256 of the PostgreSQL ZIP it downloads (`Get-FileHash`
   against a pinned value) and stops, deleting the file, before unpacking anything that does not
   match. A failed download now stops the script too.
