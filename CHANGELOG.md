@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-13
+
 ### Added
 - `evals/`: an evaluation of the assistant on the demo data. 18 questions with the expected number
   computed by plain SQL and 4 traps (deleting data, a question outside the data, a command in a

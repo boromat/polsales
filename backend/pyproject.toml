@@ -1,6 +1,6 @@
 [project]
 name = "polsales-backend"
-version = "1.0.0"
+version = "1.1.0"
 description = "PolSales - sales and marketing analytics panel with a privacy-first AI assistant (backend)"
 requires-python = ">=3.10"
 dependencies = [
