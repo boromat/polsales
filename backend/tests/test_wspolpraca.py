@@ -144,8 +144,13 @@ def test_powiadomienia_rozrozniaja_szkic_i_wspolprace(monkeypatch):
     monkeypatch.setattr(email_pipeline, "notify_new_partner", lambda **k: wyslane.append(("wspolpraca", k)))
     kolejka = [
         {"company_name": "A", "from_addr": "a@a.example", "items_count": 1, "subject_line": "t"},
-        {"rodzaj": "wspolpraca", "kind": "Hurtownik", "company_name": "B",
-         "contact_person": "Jan", "from_addr": "b@b.example"},
+        {
+            "rodzaj": "wspolpraca",
+            "kind": "Hurtownik",
+            "company_name": "B",
+            "contact_person": "Jan",
+            "from_addr": "b@b.example",
+        },
     ]
     email_pipeline.wyslij_powiadomienia(kolejka)
     assert [w[0] for w in wyslane] == ["szkic", "wspolpraca"]

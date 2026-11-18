@@ -33,8 +33,8 @@ GOOGLE_MODULES = {
     "google_ads": ("google.ads.googleads.client",),
 }
 GOOGLE_EXTRA_HINT = (
-    "Brak pakietów Google dla tej integracji. Zainstaluj extra \"google\": "
-    "pip install -e \".[google]\" (Docker: BACKEND_EXTRAS=google i ponowny build obrazu) - patrz README."
+    'Brak pakietów Google dla tej integracji. Zainstaluj extra "google": '
+    'pip install -e ".[google]" (Docker: BACKEND_EXTRAS=google i ponowny build obrazu) - patrz README.'
 )
 
 
@@ -55,8 +55,10 @@ def _has_module(name: str) -> bool:
 
 def missing_google_packages() -> dict[str, str | None]:
     """Dla GA4 i Google Ads: komunikat o brakujących pakietach albo None, gdy są zainstalowane."""
-    return {source: None if all(_has_module(m) for m in modules) else GOOGLE_EXTRA_HINT
-            for source, modules in GOOGLE_MODULES.items()}
+    return {
+        source: None if all(_has_module(m) for m in modules) else GOOGLE_EXTRA_HINT
+        for source, modules in GOOGLE_MODULES.items()
+    }
 
 
 def _run(db: DBSession, source: str, fn) -> dict:
@@ -119,14 +121,20 @@ def _meta_auth() -> dict:
 
 def _bez_sekretow(tekst: str) -> str:
     """Ostatnia linia obrony: maskuje token, gdyby jednak trafil do komunikatu bledu."""
-    for sekret in (settings.meta_access_token, settings.google_ads_developer_token,
-                   settings.google_ads_refresh_token, settings.google_ads_client_secret,
-                   settings.openrouter_api_key, settings.anthropic_api_key,
-                   settings.ga4_service_account_json):
+    for sekret in (
+        settings.meta_access_token,
+        settings.google_ads_developer_token,
+        settings.google_ads_refresh_token,
+        settings.google_ads_client_secret,
+        settings.openrouter_api_key,
+        settings.anthropic_api_key,
+        settings.ga4_service_account_json,
+    ):
         if sekret and len(sekret) > 8:
             tekst = tekst.replace(sekret, "***")
-    tekst = re.sub(r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(-----END [A-Z ]*PRIVATE KEY-----|$)",
-                   "***", tekst, flags=re.DOTALL)
+    tekst = re.sub(
+        r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(-----END [A-Z ]*PRIVATE KEY-----|$)", "***", tekst, flags=re.DOTALL
+    )
     tekst = re.sub(r"\"private_key\"\s*:\s*\"[^\"]*\"", '"private_key": "***"', tekst)
     return re.sub(r"access_token=[^&\s'\"]+", "access_token=***", tekst)
 
@@ -191,10 +199,14 @@ def _sync_ga4(db: DBSession) -> int:
                      key_events=EXCLUDED.key_events, synced_at=now()"""
             ),
             {
-                "d": d, "s": row.dimension_values[1].value, "m": row.dimension_values[2].value,
+                "d": d,
+                "s": row.dimension_values[1].value,
+                "m": row.dimension_values[2].value,
                 "c": row.dimension_values[3].value or "(not set)",
-                "se": int(row.metric_values[0].value or 0), "en": int(row.metric_values[1].value or 0),
-                "tu": int(row.metric_values[2].value or 0), "nu": int(row.metric_values[3].value or 0),
+                "se": int(row.metric_values[0].value or 0),
+                "en": int(row.metric_values[1].value or 0),
+                "tu": int(row.metric_values[2].value or 0),
+                "nu": int(row.metric_values[3].value or 0),
                 "ke": int(row.metric_values[4].value or 0),
             },
         )
@@ -232,9 +244,13 @@ def _sync_meta_ads(db: DBSession) -> int:
                          spend=EXCLUDED.spend, source='api', synced_at=now()"""
                 ),
                 {
-                    "d": row["date_start"], "cid": row.get("campaign_id"), "cn": row.get("campaign_name"),
-                    "aid": row["ad_id"], "an": row.get("ad_name"),
-                    "imp": int(row.get("impressions", 0)), "clk": int(row.get("clicks", 0)),
+                    "d": row["date_start"],
+                    "cid": row.get("campaign_id"),
+                    "cn": row.get("campaign_name"),
+                    "aid": row["ad_id"],
+                    "an": row.get("ad_name"),
+                    "imp": int(row.get("impressions", 0)),
+                    "clk": int(row.get("clicks", 0)),
                     "sp": float(row.get("spend", 0)),
                 },
             )
@@ -258,8 +274,8 @@ def _sync_meta_organic(db: DBSession) -> int:
             pid = post["id"]
             ins = hc.get(
                 f"https://graph.facebook.com/v21.0/{pid}/insights",
-                headers=_meta_auth(), params={
-                        "metric": "post_impressions,post_clicks,post_reactions_by_type_total"},
+                headers=_meta_auth(),
+                params={"metric": "post_impressions,post_clicks,post_reactions_by_type_total"},
             )
             metrics = {m["name"]: m for m in ins.json().get("data", [])} if ins.status_code == 200 else {}
             views = _meta_metric(metrics, "post_impressions")
@@ -329,9 +345,12 @@ def _sync_google_ads(db: DBSession) -> int:
                          spend=EXCLUDED.spend, source='api', synced_at=now()"""
                 ),
                 {
-                    "d": row.segments.date, "cid": str(row.campaign.id), "cn": row.campaign.name,
+                    "d": row.segments.date,
+                    "cid": str(row.campaign.id),
+                    "cn": row.campaign.name,
                     "ct": row.campaign.advertising_channel_type.name,
-                    "imp": row.metrics.impressions, "clk": row.metrics.clicks,
+                    "imp": row.metrics.impressions,
+                    "clk": row.metrics.clicks,
                     "sp": row.metrics.cost_micros / 1_000_000,
                 },
             )
@@ -371,9 +390,7 @@ def _sync_ig_competitors(db: DBSession) -> int:
     from app.db.models.competitors import CompetitorProfile
 
     konkurenci = db.scalars(
-        select(CompetitorProfile).where(
-            CompetitorProfile.is_active, CompetitorProfile.ig_username.isnot(None)
-        )
+        select(CompetitorProfile).where(CompetitorProfile.is_active, CompetitorProfile.ig_username.isnot(None))
     ).all()
     if not konkurenci:
         return 0
@@ -399,7 +416,7 @@ def _sync_ig_competitors(db: DBSession) -> int:
                 # zmieniony login. To normalny stan, nie awaria integracji.
                 log.warning("Instagram: pomijam konkurenta %s - %s", k.name, _bez_sekretow(resp.text)[:200])
                 continue
-            bd = (resp.json().get("business_discovery") or {})
+            bd = resp.json().get("business_discovery") or {}
             if not bd:
                 continue
 

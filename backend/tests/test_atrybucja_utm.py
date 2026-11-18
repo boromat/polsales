@@ -76,8 +76,7 @@ def test_zamowienie_z_utm_dostaje_kanal_i_metode():
             contact_phone=None,
             attribution_channel_id=None,  # nikt nie wskazał kanału ręcznie
             notes="TEST-UTM-ATRYBUCJA",
-            items=[{"description": "TEST-UTM pozycja", "quantity": 1,
-                    "unit_price_gross": 100.0, "vat_rate": 23}],
+            items=[{"description": "TEST-UTM pozycja", "quantity": 1, "unit_price_gross": 100.0, "vat_rate": 23}],
             utm_source="google",
             utm_medium="cpc",
         )
@@ -106,12 +105,14 @@ def test_reczny_kanal_ma_pierwszenstwo_przed_utm():
             source=OrderSource.email_formularz,
             ordered_at=None,
             status=OrderStatus.potwierdzone,
-            raw_nip=None, company_name=None,
-            contact_name=None, contact_email=None, contact_phone=None,
+            raw_nip=None,
+            company_name=None,
+            contact_name=None,
+            contact_email=None,
+            contact_phone=None,
             attribution_channel_id=SEO_DIRECT,  # ręczna korekta
             notes="TEST-UTM-ATRYBUCJA",
-            items=[{"description": "TEST-UTM pozycja", "quantity": 1,
-                    "unit_price_gross": 100.0, "vat_rate": 23}],
+            items=[{"description": "TEST-UTM pozycja", "quantity": 1, "unit_price_gross": 100.0, "vat_rate": 23}],
             utm_source="google",
             utm_medium="cpc",
         )

@@ -110,11 +110,15 @@ def _mark_tool_results(message: dict) -> dict:
     content = message.get("content")
     if message.get("role") != "user" or not isinstance(content, list):
         return message
-    return {**message, "content": [
-        {**b, "content": untrusted.wrap_tool_result(b.get("content"))}
-        if isinstance(b, dict) and b.get("type") == "tool_result" else b
-        for b in content
-    ]}
+    return {
+        **message,
+        "content": [
+            {**b, "content": untrusted.wrap_tool_result(b.get("content"))}
+            if isinstance(b, dict) and b.get("type") == "tool_result"
+            else b
+            for b in content
+        ],
+    }
 
 
 def _load_history(db: DBSession, conversation_id) -> list[dict]:
@@ -140,7 +144,7 @@ TOOLS_UNAVAILABLE_PL = (
     "Narzędzia asystenta są wyłączone: sesja tylko do odczytu (rola bazy assistant_ro) jest "
     "niedostępna, a asystent nie używa zamiast niej sesji z pełnymi uprawnieniami. Uruchom "
     "migracje (alembic upgrade head) i sprawdź, czy konto bazy może przełączyć się na rolę "
-    "assistant_ro - patrz README, sekcja \"Architektura\"."
+    'assistant_ro - patrz README, sekcja "Architektura".'
 )
 
 
@@ -157,16 +161,22 @@ def _resolve_tool_session(tool_db: DBSession | None) -> DBSession | None:
     try:
         role = tool_db.execute(text("SELECT current_user")).scalar()
     except Exception:  # noqa: BLE001 - brak roli/uprawnień, brak połączenia itp.
-        log.warning("Sesja read-only asystenta (%s) niedostępna - narzędzia wyłączone (fail closed).",
-                    READ_ONLY_ROLE, exc_info=True)
+        log.warning(
+            "Sesja read-only asystenta (%s) niedostępna - narzędzia wyłączone (fail closed).",
+            READ_ONLY_ROLE,
+            exc_info=True,
+        )
         try:
             tool_db.rollback()
         except Exception:  # noqa: BLE001, S110 - rollback po błędzie, sam błąd zalogowany wyżej
             pass
         return None
     if role != READ_ONLY_ROLE:
-        log.warning("Sesja narzędzi asystenta działa jako rola %r zamiast %s - narzędzia wyłączone "
-                    "(fail closed).", role, READ_ONLY_ROLE)
+        log.warning(
+            "Sesja narzędzi asystenta działa jako rola %r zamiast %s - narzędzia wyłączone (fail closed).",
+            role,
+            READ_ONLY_ROLE,
+        )
         tool_db.rollback()
         return None
     return tool_db
@@ -204,9 +214,16 @@ def _masking_error(exc: Exception) -> str:
     return _sse("error", {"code": "masking_unavailable", "message_pl": MASKING_UNAVAILABLE_PL.format(error=exc)})
 
 
-def run_stream(db: DBSession, conversation: Conversation, user_text: str, view_context: str | None,
-               tool_db: DBSession | None = None, *, client=None,
-               masker_factory: Callable[[DBSession], privacy.Masker | None] = build_masker):
+def run_stream(
+    db: DBSession,
+    conversation: Conversation,
+    user_text: str,
+    view_context: str | None,
+    tool_db: DBSession | None = None,
+    *,
+    client=None,
+    masker_factory: Callable[[DBSession], privacy.Masker | None] = build_masker,
+):
     """Generator zdarzeń SSE jednej tury czatu. Zapisuje wiadomości do bazy. Degraduje bez klucza API.
 
     `tool_db` to sesja read-only (assistant_ro) do zapytań narzędzi; historię czatu zapisujemy
@@ -220,9 +237,13 @@ def run_stream(db: DBSession, conversation: Conversation, user_text: str, view_c
     `client` i `masker_factory` są wstrzykiwalne na potrzeby testów.
     """
     if not is_available():
-        yield _sse("error", {"code": "no_api_key",
-                             "message_pl": "Asystent niedostępny - brak klucza API "
-                                           "(ustaw OPENROUTER_API_KEY w .env)."})
+        yield _sse(
+            "error",
+            {
+                "code": "no_api_key",
+                "message_pl": "Asystent niedostępny - brak klucza API (ustaw OPENROUTER_API_KEY w .env).",
+            },
+        )
         return
 
     client = client or build_client()
@@ -265,8 +286,10 @@ def run_stream(db: DBSession, conversation: Conversation, user_text: str, view_c
     yield _sse("message_start", {"conversation_id": str(conversation.id)})
     if masker:
         # Podgląd dla użytkownika: ile i jakich wartości ukryto oraz jak pytanie wygląda dla modelu.
-        yield _sse("privacy", {"masked": len(masker.mapping), "labels": masker.labels(),
-                               "model_view": _last_user_text(messages)})
+        yield _sse(
+            "privacy",
+            {"masked": len(masker.mapping), "labels": masker.labels(), "model_view": _last_user_text(messages)},
+        )
 
     try:
         yield from _loop(db, conversation, client, model, system_blocks, messages, masker, tool_db)
@@ -275,8 +298,16 @@ def run_stream(db: DBSession, conversation: Conversation, user_text: str, view_c
         yield _masking_error(exc)
 
 
-def _loop(db: DBSession, conversation: Conversation, client, model: str, system_blocks: list[dict],
-          messages: list[dict], masker: privacy.Masker | None, tool_db: DBSession | None):
+def _loop(
+    db: DBSession,
+    conversation: Conversation,
+    client,
+    model: str,
+    system_blocks: list[dict],
+    messages: list[dict],
+    masker: privacy.Masker | None,
+    tool_db: DBSession | None,
+):
     """Pętla tool-use: model -> narzędzia -> model, aż do odpowiedzi końcowej lub limitu iteracji.
 
     `messages` to wersja dla modelu (zamaskowana, gdy jest masker); do bazy trafia wersja
@@ -324,16 +355,28 @@ def _loop(db: DBSession, conversation: Conversation, client, model: str, system_
                 unknown = masker.unknown_tokens(json.dumps(assistant_content, ensure_ascii=False))
                 if unknown:
                     log.warning("polanon: %d token(ów) w odpowiedzi nie ma w mapowaniu", len(unknown))
-            db.add(Message(
-                conversation_id=conversation.id, role="assistant", content=stored_content,
-                model=model, input_tokens=usage["input_tokens"],
-                output_tokens=usage["output_tokens"], cache_read_tokens=usage["cache_read"],
-            ))
+            db.add(
+                Message(
+                    conversation_id=conversation.id,
+                    role="assistant",
+                    content=stored_content,
+                    model=model,
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    cache_read_tokens=usage["cache_read"],
+                )
+            )
             conversation.updated_at = datetime.now(timezone.utc)
             db.commit()
             # Końcowy licznik: wartości z wyników narzędzi dochodzą po zdarzeniu "privacy".
-            yield _sse("done", {"usage": usage, "masked": len(masker.mapping) if masker else 0,
-                                "labels": masker.labels() if masker else {}})
+            yield _sse(
+                "done",
+                {
+                    "usage": usage,
+                    "masked": len(masker.mapping) if masker else 0,
+                    "labels": masker.labels() if masker else {},
+                },
+            )
             return
 
         # Wykonaj narzędzia - wyłącznie na sesji read-only (decyzja #9), sprawdzanej raz na turę.
@@ -350,16 +393,18 @@ def _loop(db: DBSession, conversation: Conversation, client, model: str, system_
                 result, is_error, ms = {"error": TOOLS_UNAVAILABLE_PL}, True, 0.0
             else:
                 result, is_error, ms = _run_tool(tool_session, block.name, args)
-            db.add(ToolCallLog(conversation_id=conversation.id, tool_name=block.name,
-                               params=args, ms=round(ms, 2)))
+            db.add(ToolCallLog(conversation_id=conversation.id, tool_name=block.name, params=args, ms=round(ms, 2)))
             db.commit()
             sent = masker.mask_data(result) if masker else result  # MaskingUnavailable = nic nie wychodzi
             for target, payload in ((results_for_model, sent), (results_for_db, result)):
-                target.append({
-                    "type": "tool_result", "tool_use_id": block.id,
-                    "content": json.dumps(payload, ensure_ascii=False, default=str),
-                    "is_error": is_error,
-                })
+                target.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": json.dumps(payload, ensure_ascii=False, default=str),
+                        "is_error": is_error,
+                    }
+                )
         # Do modelu wyniki w znacznikach danych (prompt injection); do bazy idzie czysty JSON.
         results_for_model = _mark_tool_results({"role": "user", "content": results_for_model})["content"]
         # Zapisz turę asystenta (tool_use) - osobny commit, by created_at był wcześniejszy niż tool_result.
@@ -402,7 +447,10 @@ def _block_to_dict(block) -> dict:
     if t == "tool_use":
         return {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
     if t == "thinking":
-        return {"type": "thinking", "thinking": getattr(block, "thinking", ""),
-                "signature": getattr(block, "signature", "")}
+        return {
+            "type": "thinking",
+            "thinking": getattr(block, "thinking", ""),
+            "signature": getattr(block, "signature", ""),
+        }
     # inne typy (redacted_thinking itd.) - zapisz surowo
     return json.loads(block.model_dump_json()) if hasattr(block, "model_dump_json") else {"type": t}

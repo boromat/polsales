@@ -22,10 +22,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_sync_runs_source_started "
-        "ON ops.sync_runs (source, started_at DESC)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_sync_runs_source_started ON ops.sync_runs (source, started_at DESC)")
 
 
 def downgrade() -> None:

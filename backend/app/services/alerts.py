@@ -30,22 +30,36 @@ def business_alerts(db: DBSession, ref: date | None = None) -> list[dict]:
     out: list[dict] = []
 
     if mk["roas"] is not None and mk["roas"] < 1 and (mk["spend"] or 0) > 0:
-        out.append({"level": "warning", "title": f"ROAS poniżej 1 ({_num(mk['roas'])}×)",
-                    "detail": f"Reklamy płatne zwracają {_num(mk['roas'])}× wydatków w 30 dni - kampanie "
-                              f"nie zarabiają. Zweryfikuj lub ogranicz budżet."})
+        out.append(
+            {
+                "level": "warning",
+                "title": f"ROAS poniżej 1 ({_num(mk['roas'])}×)",
+                "detail": f"Reklamy płatne zwracają {_num(mk['roas'])}× wydatków w 30 dni - kampanie "
+                f"nie zarabiają. Zweryfikuj lub ogranicz budżet.",
+            }
+        )
 
     if kpi["cac"] is not None and kpi["avg_ltv_net"] is not None and kpi["cac"] > kpi["avg_ltv_net"]:
-        out.append({"level": "danger", "title": "CAC przewyższa LTV",
-                    "detail": f"Koszt pozyskania ({_money(kpi['cac'])}) jest wyższy niż średnie LTV "
-                              f"firmy ({_money(kpi['avg_ltv_net'])}) - pozyskiwanie klientów jest nierentowne."})
+        out.append(
+            {
+                "level": "danger",
+                "title": "CAC przewyższa LTV",
+                "detail": f"Koszt pozyskania ({_money(kpi['cac'])}) jest wyższy niż średnie LTV "
+                f"firmy ({_money(kpi['avg_ltv_net'])}) - pozyskiwanie klientów jest nierentowne.",
+            }
+        )
 
     start, end, ps, pe = last_full_week(ref)
     agg = aggregate_week(db, start, end, ps, pe)
     if agg["revenue_change_pct"] is not None and agg["revenue_change_pct"] <= -25:
-        out.append({"level": "warning",
-                    "title": f"Spadek przychodu {_num(agg['revenue_change_pct'], 1)}% w.d.t.",
-                    "detail": f"Przychód ostatniego pełnego tygodnia spadł o "
-                              f"{_num(abs(agg['revenue_change_pct']), 1)}% względem poprzedniego."})
+        out.append(
+            {
+                "level": "warning",
+                "title": f"Spadek przychodu {_num(agg['revenue_change_pct'], 1)}% w.d.t.",
+                "detail": f"Przychód ostatniego pełnego tygodnia spadł o "
+                f"{_num(abs(agg['revenue_change_pct']), 1)}% względem poprzedniego.",
+            }
+        )
 
     share = db.execute(
         text(
@@ -57,9 +71,14 @@ def business_alerts(db: DBSession, ref: date | None = None) -> list[dict]:
         {"df": df, "dt": ref},
     ).scalar()
     if share is not None and share >= 0.6:
-        out.append({"level": "info", "title": f"Dużo zamówień bez atrybucji ({round(share * 100)}%)",
-                    "detail": "Ponad 60% zamówień nie ma pewnego źródła - dodaj pola UTM w formularzu "
-                              "lub uzupełniaj „skąd klient?” przy wpisie, by metryki kanałów były wiarygodne."})
+        out.append(
+            {
+                "level": "info",
+                "title": f"Dużo zamówień bez atrybucji ({round(share * 100)}%)",
+                "detail": "Ponad 60% zamówień nie ma pewnego źródła - dodaj pola UTM w formularzu "
+                "lub uzupełniaj „skąd klient?” przy wpisie, by metryki kanałów były wiarygodne.",
+            }
+        )
 
     neg = db.execute(
         text(
@@ -70,7 +89,12 @@ def business_alerts(db: DBSession, ref: date | None = None) -> list[dict]:
         {"df": df, "dt": ref},
     ).scalar()
     if neg and neg > 0:
-        out.append({"level": "warning", "title": f"Sprzedaż poniżej kosztu ({neg} prod.)",
-                    "detail": f"{neg} produkt(y) sprzedano z ujemną marżą w 30 dni - sprawdź ceny/koszty."})
+        out.append(
+            {
+                "level": "warning",
+                "title": f"Sprzedaż poniżej kosztu ({neg} prod.)",
+                "detail": f"{neg} produkt(y) sprzedano z ujemną marżą w 30 dni - sprawdź ceny/koszty.",
+            }
+        )
 
     return out

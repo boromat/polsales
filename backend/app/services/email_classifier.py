@@ -13,9 +13,26 @@ from app.config import settings
 
 # Frazy sygnalizujące zamówienie (lematy/frazy PL).
 ORDER_KEYWORDS = [
-    "zamawiam", "zamówienie", "zamowienie", "proszę o wycenę", "prosze o wycene",
-    "poproszę", "poprosze", "sztuk", "szt.", "sztuki", "faktura", "nip", "dostawa",
-    "zamówić", "zamowic", "cennik", "oferta", "kupię", "kupie", "koszyk",
+    "zamawiam",
+    "zamówienie",
+    "zamowienie",
+    "proszę o wycenę",
+    "prosze o wycene",
+    "poproszę",
+    "poprosze",
+    "sztuk",
+    "szt.",
+    "sztuki",
+    "faktura",
+    "nip",
+    "dostawa",
+    "zamówić",
+    "zamowic",
+    "cennik",
+    "oferta",
+    "kupię",
+    "kupie",
+    "koszyk",
 ]
 
 # Nagłówki/nadawcy sygnalizujące automat/newsletter (odrzucenie).

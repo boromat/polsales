@@ -18,6 +18,7 @@ Zakres:
 - Trigger sum zamówienia: przelicza stare i nowe zamówienie przy zmianie order_id pozycji.
 - Rekomendacje: częściowy UNIQUE na dedupe_hash dla aktywnych.
 """
+
 from __future__ import annotations
 
 from alembic import op
@@ -54,12 +55,8 @@ def upgrade() -> None:
     )
 
     # 2. CHECK na pozycjach: stawka VAT w [0,100), cena brutto ≥ 0 (bez dzielenia przez zero).
-    op.execute(
-        "ALTER TABLE core.order_items ADD CONSTRAINT ck_vat_rate CHECK (vat_rate >= 0 AND vat_rate < 100)"
-    )
-    op.execute(
-        "ALTER TABLE core.order_items ADD CONSTRAINT ck_unit_price CHECK (unit_price_gross >= 0)"
-    )
+    op.execute("ALTER TABLE core.order_items ADD CONSTRAINT ck_vat_rate CHECK (vat_rate >= 0 AND vat_rate < 100)")
+    op.execute("ALTER TABLE core.order_items ADD CONSTRAINT ck_unit_price CHECK (unit_price_gross >= 0)")
 
     # 3. Atomowy licznik numeracji zamówień (zamiast nieatomowego count(*)+1).
     op.execute(

@@ -4,6 +4,7 @@ Revision ID: 0008_usprawnienia
 Revises: 0007_domkniecie_zakresu
 Create Date: 2026-07-20
 """
+
 from __future__ import annotations
 
 from alembic import op

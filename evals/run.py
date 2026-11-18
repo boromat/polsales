@@ -28,11 +28,19 @@ ASSUMED_OUTPUT_TOKENS_PER_CALL = 400
 def _estimate(harness, run: dict, model: str) -> dict:
     key, price = harness.price_for(model)
     calls = sum(r["model_calls"] for r in run["results"])
-    usage = {"input_tokens": run["summary"]["input_tokens"],
-             "output_tokens": calls * ASSUMED_OUTPUT_TOKENS_PER_CALL,
-             "cache_read_tokens": 0, "cache_write_tokens": 0}
-    return {"price_model": key, "known_price": price is not None, "model_calls": calls, **usage,
-            "cost_usd_upper_bound": harness.cost_usd(usage, price)}
+    usage = {
+        "input_tokens": run["summary"]["input_tokens"],
+        "output_tokens": calls * ASSUMED_OUTPUT_TOKENS_PER_CALL,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+    }
+    return {
+        "price_model": key,
+        "known_price": price is not None,
+        "model_calls": calls,
+        **usage,
+        "cost_usd_upper_bound": harness.cost_usd(usage, price),
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -73,8 +81,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.out:
             _save(run, Path(args.out), harness)
         s = run["summary"]
-        clean = (s["tool_choice"]["ok"] == s["tool_choice"]["of"] and s["numbers"]["ok"] == s["numbers"]["of"]
-                 and s["traps"]["ok"] == s["traps"]["of"] and not s["errors"])
+        clean = (
+            s["tool_choice"]["ok"] == s["tool_choice"]["of"]
+            and s["numbers"]["ok"] == s["numbers"]["of"]
+            and s["traps"]["ok"] == s["traps"]["of"]
+            and not s["errors"]
+        )
         return 0 if clean else 1  # na atrapie każdy przypadek ma przejść
 
     if not ai_configured():
@@ -82,8 +94,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if not args.yes:
         mock = harness.MockModel()
-        est = _estimate(harness, harness.run_eval(args.database_url, client=mock, mock=mock, model=model,
-                                                  **common), model)
+        est = _estimate(
+            harness, harness.run_eval(args.database_url, client=mock, mock=mock, model=model, **common), model
+        )
         print(json.dumps(est, ensure_ascii=False, indent=2))
         print("To płatny przebieg. Uruchom ponownie z --yes, jeśli koszt jest w porządku.")
         return 1

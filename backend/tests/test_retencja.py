@@ -14,17 +14,24 @@ from app.scheduler.runner import purge_raw_emails
 
 def _mail(status: str, age_days: int) -> Email:
     return Email(
-        message_id_hash=f"test-retencja-{uuid.uuid4().hex}", from_addr="anna.testowa@orlik.example",
-        subject="Zamówienie", body_text="Treść z danymi klienta", body_html="<p>Treść</p>",
-        raw_headers="From: anna.testowa@orlik.example", status=status,
+        message_id_hash=f"test-retencja-{uuid.uuid4().hex}",
+        from_addr="anna.testowa@orlik.example",
+        subject="Zamówienie",
+        body_text="Treść z danymi klienta",
+        body_html="<p>Treść</p>",
+        raw_headers="From: anna.testowa@orlik.example",
+        status=status,
         created_at=datetime.now(timezone.utc) - timedelta(days=age_days),
     )
 
 
 def test_purge_clears_old_handled_mail_and_keeps_the_rest():
     db = SessionLocal()
-    old_done, old_pending, fresh_done = _mail("zamowienie_utworzone", 40), _mail("sparsowany", 40), \
-        _mail("zamowienie_utworzone", 5)
+    old_done, old_pending, fresh_done = (
+        _mail("zamowienie_utworzone", 40),
+        _mail("sparsowany", 40),
+        _mail("zamowienie_utworzone", 5),
+    )
     db.add_all([old_done, old_pending, fresh_done])
     db.commit()
     try:

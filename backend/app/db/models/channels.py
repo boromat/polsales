@@ -58,9 +58,7 @@ class MetaAdsDaily(Base):
     spend: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
     conversions: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     source: Mapped[str] = mapped_column(Text, nullable=False, default="api")
-    synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 # --- Google Ads ---
@@ -81,9 +79,7 @@ class GoogleAdsDaily(Base):
     spend: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
     conversions: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0, server_default="0")
     source: Mapped[str] = mapped_column(Text, nullable=False, default="api")
-    synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 # --- GA4 ruch ---
@@ -104,9 +100,7 @@ class GA4TrafficDaily(Base):
     total_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     new_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     key_events: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
-    synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 # --- Organiczne FB/IG (metryka views, decyzja #8) ---
@@ -129,6 +123,4 @@ class OrganicPostStatsDaily(Base):
     shares: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     link_clicks: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     source: Mapped[str] = mapped_column(Text, nullable=False, default="api")
-    synced_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

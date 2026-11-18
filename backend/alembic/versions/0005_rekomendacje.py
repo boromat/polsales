@@ -4,6 +4,7 @@ Revision ID: 0005_rekomendacje
 Revises: 0004_asystent_ai
 Create Date: 2026-07-19
 """
+
 from __future__ import annotations
 
 from alembic import op
@@ -22,9 +23,7 @@ def upgrade() -> None:
         "ALTER TABLE core.recommendations ADD CONSTRAINT ck_rec_status "
         "CHECK (status IN ('active','archived','dismissed'))"
     )
-    op.execute(
-        "CREATE INDEX idx_rec_active ON core.recommendations (created_at DESC) WHERE status = 'active'"
-    )
+    op.execute("CREATE INDEX idx_rec_active ON core.recommendations (created_at DESC) WHERE status = 'active'")
     op.execute("GRANT SELECT ON core.recommendations TO assistant_ro")
 
 

@@ -103,6 +103,7 @@ def build_client():
 
 # --- Structured output (JSON wg schematu) ------------------------------------
 
+
 def first_text(resp) -> str | None:
     """Pierwszy blok tekstowy odpowiedzi."""
     return next((b.text for b in resp.content if getattr(b, "type", None) == "text"), None)
@@ -131,8 +132,7 @@ def _loads_loose(text: str | None) -> dict | None:
         return None
 
 
-def structured_json(client, *, model: str, system: str, user: str,
-                    schema: dict, max_tokens: int = 2000) -> dict | None:
+def structured_json(client, *, model: str, system: str, user: str, schema: dict, max_tokens: int = 2000) -> dict | None:
     """Wywołanie zwracające JSON zgodny ze schematem.
 
     Najpierw natywny `output_config` (gwarantowana zgodność). Gdy dostawca go nie obsługuje -
@@ -157,8 +157,10 @@ def structured_json(client, *, model: str, system: str, user: str,
     resp = client.messages.create(
         model=resolved,
         max_tokens=max_tokens,
-        system=(system + "\n\nOdpowiedz WYŁĄCZNIE poprawnym JSON-em zgodnym z tym schematem, "
-                "bez komentarzy i bez bloków kodu:\n" + json.dumps(schema, ensure_ascii=False)),
+        system=(
+            system + "\n\nOdpowiedz WYŁĄCZNIE poprawnym JSON-em zgodnym z tym schematem, "
+            "bez komentarzy i bez bloków kodu:\n" + json.dumps(schema, ensure_ascii=False)
+        ),
         messages=[{"role": "user", "content": user}],
     )
     return _loads_loose(first_text(resp))

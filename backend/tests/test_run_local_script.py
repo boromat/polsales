@@ -50,13 +50,26 @@ def test_assert_sha256_stops_and_deletes_a_file_that_does_not_match(tmp_path, ma
     expected = hashlib.sha256(zip_file.read_bytes()).hexdigest().upper() if matches else "0" * 64
     runner = tmp_path / "check.ps1"
     runner.write_text(
-        "$ErrorActionPreference = 'Stop'\n" + _function("Assert-Sha256")
+        "$ErrorActionPreference = 'Stop'\n"
+        + _function("Assert-Sha256")
         + f"Assert-Sha256 -Path '{zip_file}' -Expected '{expected}'\n'unpacked'\n",
         encoding="utf-8-sig",
     )
     # fixed argv: PowerShell from PATH and a script this test has just written
-    r = subprocess.run([POWERSHELL, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",  # noqa: S603
-                        "-File", str(runner)], capture_output=True, text=True, timeout=120)
+    r = subprocess.run(  # noqa: S603
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(runner),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
     if matches:
         assert r.returncode == 0, r.stderr
         assert "unpacked" in r.stdout and zip_file.exists()

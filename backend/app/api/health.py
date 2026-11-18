@@ -17,15 +17,19 @@ EXPECTED_SOURCES = ["imap", "meta_ads", "meta_organic", "google_ads", "ga4", "ig
 
 @router.get("/integrations")
 def integrations_status(db: DBSession = Depends(get_db)) -> dict:
-    rows = db.execute(
-        text(
-            """
+    rows = (
+        db.execute(
+            text(
+                """
             SELECT DISTINCT ON (source) source, status, finished_at, error_message
             FROM ops.sync_runs
             ORDER BY source, started_at DESC
             """
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     by_source = {r["source"]: dict(r) for r in rows}
 
     result = []

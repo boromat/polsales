@@ -52,16 +52,12 @@ class OrderDraft(Base):
 
     ambiguities: Mapped[dict | None] = mapped_column(JSONB)  # lista niejasności do weryfikacji
     notes: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     reviewed_note: Mapped[str | None] = mapped_column(Text)
     order_id: Mapped[int | None] = mapped_column(ForeignKey(f"{SCHEMA}.orders.id"))
 
-    items: Mapped[list[OrderDraftItem]] = relationship(
-        back_populates="draft", cascade="all, delete-orphan"
-    )
+    items: Mapped[list[OrderDraftItem]] = relationship(back_populates="draft", cascade="all, delete-orphan")
 
 
 class OrderDraftItem(Base):
@@ -69,9 +65,7 @@ class OrderDraftItem(Base):
     __table_args__ = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    draft_id: Mapped[int] = mapped_column(
-        ForeignKey(f"{SCHEMA}.orders_draft.id", ondelete="CASCADE"), nullable=False
-    )
+    draft_id: Mapped[int] = mapped_column(ForeignKey(f"{SCHEMA}.orders_draft.id", ondelete="CASCADE"), nullable=False)
     raw_name: Mapped[str | None] = mapped_column(Text)
     quantity: Mapped[float | None] = mapped_column(Numeric(10, 3))
     unit: Mapped[str | None] = mapped_column(Text)
@@ -94,6 +88,4 @@ class ProductAlias(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     raw_name_normalized: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     product_id: Mapped[int] = mapped_column(ForeignKey(f"{SCHEMA}.products.id"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

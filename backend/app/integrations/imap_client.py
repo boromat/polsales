@@ -86,19 +86,21 @@ def poll_and_ingest(db: DBSession) -> dict:
                     try:
                         with db.begin_nested():
                             tresc = (getattr(msg, "text", "") or "")[:5000]
-                            db.add(Email(
-                                message_id_hash=f"blad-uid-{uidvalidity}-{uid_txt}",
-                                uidvalidity=uidvalidity,
-                                uid=int(uid_txt) if uid_txt.isdigit() else None,
-                                from_addr=getattr(msg, "from_", None) or None,
-                                subject=getattr(msg, "subject", None) or None,
-                                body_text=tresc.replace(chr(0), "") or None,
-                                status="blad_parsowania",
-                                error_detail=(
-                                    "Wiadomosc odrzucona przez baze przy zapisie (tresc moze "
-                                    "zawierac niedozwolone znaki). Mail zostal na serwerze."
-                                ),
-                            ))
+                            db.add(
+                                Email(
+                                    message_id_hash=f"blad-uid-{uidvalidity}-{uid_txt}",
+                                    uidvalidity=uidvalidity,
+                                    uid=int(uid_txt) if uid_txt.isdigit() else None,
+                                    from_addr=getattr(msg, "from_", None) or None,
+                                    subject=getattr(msg, "subject", None) or None,
+                                    body_text=tresc.replace(chr(0), "") or None,
+                                    status="blad_parsowania",
+                                    error_detail=(
+                                        "Wiadomosc odrzucona przez baze przy zapisie (tresc moze "
+                                        "zawierac niedozwolone znaki). Mail zostal na serwerze."
+                                    ),
+                                )
+                            )
                     except Exception:  # noqa: BLE001 - slad jest best-effort
                         log.exception("Nie udalo sie zapisac sladu po mailu UID=%s", uid_txt)
                     log.exception(
@@ -127,9 +129,13 @@ def poll_and_ingest(db: DBSession) -> dict:
         run.finished_at = datetime.now(timezone.utc)
         db.commit()
         wyslij_powiadomienia(powiadomienia)
-        return {"status": "error" if failed else "success", "ingested": ingested,
-                "duplicates": duplicates, "failed": failed,
-                "pominiete_uid": pominiete_uid[:20]}
+        return {
+            "status": "error" if failed else "success",
+            "ingested": ingested,
+            "duplicates": duplicates,
+            "failed": failed,
+            "pominiete_uid": pominiete_uid[:20],
+        }
     except Exception as exc:  # noqa: BLE001
         db.rollback()
         run = db.merge(run)

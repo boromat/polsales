@@ -5,6 +5,7 @@ Revision ID: 0007_domkniecie_zakresu
 Revises: 0006_poprawki_audytu
 Create Date: 2026-07-20
 """
+
 from __future__ import annotations
 
 from alembic import op

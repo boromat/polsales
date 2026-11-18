@@ -15,8 +15,13 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session as DBSession
 
 CHANNEL_ALIASES = {
-    "meta_ads": "meta_ads", "meta": "meta_ads", "facebook": "meta_ads", "fb": "meta_ads",
-    "google_ads": "google_ads", "google": "google_ads", "adwords": "google_ads",
+    "meta_ads": "meta_ads",
+    "meta": "meta_ads",
+    "facebook": "meta_ads",
+    "fb": "meta_ads",
+    "google_ads": "google_ads",
+    "google": "google_ads",
+    "adwords": "google_ads",
 }
 
 # Wszystkie odmiany spacji używane jako separator tysięcy (zwykła, U+00A0, U+202F,
@@ -64,7 +69,7 @@ def import_marketing_csv(db: DBSession, content: str) -> dict:
 
     # Normalizacja nagłówków (bez ogonków, lowercase).
     for i, raw in enumerate(reader, start=2):
-        row = { (k or "").strip().lower(): (v or "").strip() for k, v in raw.items() }
+        row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items()}
         try:
             # SAVEPOINT na wiersz: blad SQL przerywa CALA transakcje Postgresa, wiec bez
             # zagniezdzenia kolejne INSERT-y leca w InFailedSqlTransaction, a koncowy
@@ -103,8 +108,7 @@ def import_marketing_csv(db: DBSession, content: str) -> dict:
                                  impressions=EXCLUDED.impressions, clicks=EXCLUDED.clicks,
                                  spend=EXCLUDED.spend, source='csv', synced_at=now()"""
                         ),
-                        {"d": d, "cid": campaign, "cn": campaign, "adid": adid,
-                         "imp": imp, "clk": clk, "cost": cost},
+                        {"d": d, "cid": campaign, "cn": campaign, "adid": adid, "imp": imp, "clk": clk, "cost": cost},
                     )
                     counts["meta_ads"] += 1
                 else:

@@ -45,7 +45,9 @@ def test_alerts_returns_list(auth_client: TestClient):
 
 def test_order_create_patch_cancel(auth_client: TestClient):
     payload = {
-        "source": "stacjonarnie", "status": "potwierdzone", "nip": "5556667776",
+        "source": "stacjonarnie",
+        "status": "potwierdzone",
+        "nip": "5556667776",
         "company_name": "Test API Sp. z o.o.",
         "items": [{"description": "Pozycja testowa", "quantity": 1, "unit_price_gross": 123.0, "vat_rate": 23}],
     }
@@ -133,8 +135,10 @@ def test_nieodczytany_mail_da_sie_oznaczyc_jako_obsluzony(auth_client: TestClien
     try:
         mail = Email(
             message_id_hash=f"test-obsluzony-{uuid.uuid4().hex}",
-            from_addr="klient@test-obsluzony.example", subject="Zamowienie",
-            body_text="Prosze o 3 kartony.", status="blad_parsowania",
+            from_addr="klient@test-obsluzony.example",
+            subject="Zamowienie",
+            body_text="Prosze o 3 kartony.",
+            status="blad_parsowania",
             error_detail="Parser bez wyniku.",
         )
         db.add(mail)
@@ -173,10 +177,16 @@ def test_narracja_uzywa_polskiego_formatu_liczb():
     from app.services.weekly_summary import _baseline_narrative
 
     agg = {
-        "week_start": "2026-07-13", "week_end": "2026-07-19",
-        "revenue_net": 707.31, "orders_count": 4, "avg_order_value_net": 176.83,
-        "avg_lead_time_days": 3.5, "revenue_change_pct": -12.5, "orders_change_pct": 33.3,
-        "ad_spend": 980.0, "roas": 0.6388,
+        "week_start": "2026-07-13",
+        "week_end": "2026-07-19",
+        "revenue_net": 707.31,
+        "orders_count": 4,
+        "avg_order_value_net": 176.83,
+        "avg_lead_time_days": 3.5,
+        "revenue_change_pct": -12.5,
+        "orders_change_pct": 33.3,
+        "ad_spend": 980.0,
+        "roas": 0.6388,
         "top_product": {"name": "Pakiet X", "revenue_net": 300.0},
         "top_channel": {"channel": "google_ads", "revenue_net": 626.01},
         "best_ad_format": {"platform": "meta_ads", "format": "reels"},
@@ -367,15 +377,11 @@ def test_polonize_decimals_nie_psuje_dat():
     assert polonize_decimals("707.31 zł netto") == "707,31 zł netto"
     assert polonize_decimals("ROAS: 0.64, CTR 2.4%") == "ROAS: 0,64, CTR 2,4%"
     # Data polska MUSI zachowac kropki
-    assert polonize_decimals("Tydzień 13.07.2026-19.07.2026: 707.31 zł") == (
-        "Tydzień 13.07.2026-19.07.2026: 707,31 zł"
-    )
+    assert polonize_decimals("Tydzień 13.07.2026-19.07.2026: 707.31 zł") == ("Tydzień 13.07.2026-19.07.2026: 707,31 zł")
     # Data ISO i kropka zdaniowa nietkniete
     assert polonize_decimals("Tydzień 2026-07-13. Koniec.") == "Tydzień 2026-07-13. Koniec."
     # Liczba otoczona spacjami nie moze zostac uszkodzona
-    assert polonize_decimals("Zamówienia: 4 sztuki, wartość 12.50 zł") == (
-        "Zamówienia: 4 sztuki, wartość 12,50 zł"
-    )
+    assert polonize_decimals("Zamówienia: 4 sztuki, wartość 12.50 zł") == ("Zamówienia: 4 sztuki, wartość 12,50 zł")
 
 
 def test_pdf_odporny_na_znaczniki_w_nazwie_produktu():
@@ -395,15 +401,20 @@ def test_pdf_odporny_na_znaczniki_w_nazwie_produktu():
 
     db = SessionLocal()
     try:
-        oid = db.execute(text("""SELECT id FROM core.orders
+        oid = db.execute(
+            text("""SELECT id FROM core.orders
                                   WHERE status IN ('potwierdzone','zrealizowane')
-                                  ORDER BY ordered_at DESC LIMIT 1""")).scalar()
+                                  ORDER BY ordered_at DESC LIMIT 1""")
+        ).scalar()
         if oid is None:
             return  # brak danych do testu integracyjnego
         zla = "TEST-XML Rura <mocna & <b>szeroka"
-        db.execute(text("""INSERT INTO core.order_items
+        db.execute(
+            text("""INSERT INTO core.order_items
                              (order_id, description, quantity, unit_price_gross, vat_rate)
-                           VALUES (:o, :d, 1, 99000.00, 23)"""), {"o": oid, "d": zla})
+                           VALUES (:o, :d, 1, 99000.00, 23)"""),
+            {"o": oid, "d": zla},
+        )
         db.commit()
         try:
             pdf = build_report_pdf(db, date(2025, 1, 1), date(2027, 1, 1))

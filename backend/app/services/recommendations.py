@@ -41,36 +41,49 @@ _NUM_TOL = 0.01
 
 def aggregate_performance(db: DBSession, df: date, dt: date) -> dict:
     """Deterministyczne agregaty (liczby NIE pochodzą z modelu) - wsad do generowania."""
-    channels = db.execute(
-        text(
-            """SELECT f.channel_code, ch.name_pl, sum(f.spend) spend, sum(f.clicks) clicks,
+    channels = (
+        db.execute(
+            text(
+                """SELECT f.channel_code, ch.name_pl, sum(f.spend) spend, sum(f.clicks) clicks,
                       sum(f.impressions) impressions, sum(f.orders) orders, sum(f.revenue_net) revenue
                FROM analytics.v_funnel_daily f LEFT JOIN core.channels ch ON ch.code=f.channel_code
                WHERE f.date BETWEEN :df AND :dt
                GROUP BY f.channel_code, ch.name_pl"""
-        ),
-        {"df": df, "dt": dt},
-    ).mappings().all()
+            ),
+            {"df": df, "dt": dt},
+        )
+        .mappings()
+        .all()
+    )
 
-    top_products = db.execute(
-        text(
-            """SELECT COALESCE(pr.name, oi.description,'Nieznany') name, sum(oi.line_net) revenue
+    top_products = (
+        db.execute(
+            text(
+                """SELECT COALESCE(pr.name, oi.description,'Nieznany') name, sum(oi.line_net) revenue
                FROM core.order_items oi JOIN core.orders o ON o.id=oi.order_id
                LEFT JOIN core.products pr ON pr.id=oi.product_id
                WHERE o.status IN ('potwierdzone','zrealizowane') AND o.ordered_at::date BETWEEN :df AND :dt
                GROUP BY 1 ORDER BY revenue DESC LIMIT 3"""
-        ),
-        {"df": df, "dt": dt},
-    ).mappings().all()
+            ),
+            {"df": df, "dt": dt},
+        )
+        .mappings()
+        .all()
+    )
 
     def roas(r):
         return round(float(r["revenue"]) / float(r["spend"]), 2) if r["spend"] else None
 
     return {
         "channels": [
-            {"code": r["channel_code"], "name": r["name_pl"] or r["channel_code"],
-             "spend": round(float(r["spend"]), 2), "orders": int(r["orders"]),
-             "revenue_net": round(float(r["revenue"]), 2), "roas": roas(r)}
+            {
+                "code": r["channel_code"],
+                "name": r["name_pl"] or r["channel_code"],
+                "spend": round(float(r["spend"]), 2),
+                "orders": int(r["orders"]),
+                "revenue_net": round(float(r["revenue"]), 2),
+                "roas": roas(r),
+            }
             for r in channels
         ],
         "top_products": [{"name": p["name"], "revenue_net": round(float(p["revenue"]), 2)} for p in top_products],
@@ -93,6 +106,7 @@ def _dedupe_hash(category: str, subject: str) -> str:
 
 
 # --- Walidacja anty-halucynacyjna (decyzja #11) -------------------------------------------------
+
 
 def _add_num(acc: set[float], x: float) -> None:
     for v in (x, round(x, 2), round(x, 1), round(x, 0)):
@@ -179,7 +193,8 @@ def _validate_recommendations(recs: list[dict], allowed: set[float], method: str
         if bad:
             log.warning(
                 "Odrzucono rekomendację (liczby spoza danych: %s): %s",
-                bad, r.get("title", "?"),
+                bad,
+                r.get("title", "?"),
             )
             continue
         valid.append(r)
@@ -187,6 +202,7 @@ def _validate_recommendations(recs: list[dict], allowed: set[float], method: str
 
 
 # --- Generowanie ---------------------------------------------------------------------------------
+
 
 def _baseline_recommendations(agg: dict) -> list[dict]:
     """Rekomendacje regułowe z agregatów (działa bez klucza API).
@@ -201,71 +217,79 @@ def _baseline_recommendations(agg: dict) -> list[dict]:
         worst = min(paid, key=lambda c: c["roas"])
         # Zwiększać budżet warto tylko, gdy najlepszy kanał jest rentowny (ROAS ≥ 1).
         if best["roas"] >= 1:
-            recs.append({
-                "category": "budget_allocation",
-                "subject": f"kanał {best['name']}",
-                "title": f"{best['name']} ma najlepszy ROAS ({num_pl(best['roas'])})",
-                "body": f"Kanał {best['name']} zwrócił {num_pl(best['roas'])}× wydatków "
-                        f"({num_pl(best['revenue_net'])} zł przychodu przy {num_pl(best['spend'])} zł kosztu). "
-                        f"Rozważ zwiększenie budżetu tego kanału.",
-                "confidence": "medium",
-                "supporting_metrics": [
-                    {"metric": "roas", "value": best["roas"], "channel": best["code"]},
-                    {"metric": "revenue_net", "value": best["revenue_net"], "channel": best["code"]},
-                    {"metric": "spend", "value": best["spend"], "channel": best["code"]},
-                ],
-            })
+            recs.append(
+                {
+                    "category": "budget_allocation",
+                    "subject": f"kanał {best['name']}",
+                    "title": f"{best['name']} ma najlepszy ROAS ({num_pl(best['roas'])})",
+                    "body": f"Kanał {best['name']} zwrócił {num_pl(best['roas'])}× wydatków "
+                    f"({num_pl(best['revenue_net'])} zł przychodu przy {num_pl(best['spend'])} zł kosztu). "
+                    f"Rozważ zwiększenie budżetu tego kanału.",
+                    "confidence": "medium",
+                    "supporting_metrics": [
+                        {"metric": "roas", "value": best["roas"], "channel": best["code"]},
+                        {"metric": "revenue_net", "value": best["revenue_net"], "channel": best["code"]},
+                        {"metric": "spend", "value": best["spend"], "channel": best["code"]},
+                    ],
+                }
+            )
         # Kanał o ROAS < 1 kosztuje więcej niż przynosi - rekomendacja ograniczenia/optymalizacji.
         if worst["roas"] < 1:
-            recs.append({
-                "category": "budget_allocation",
-                "subject": f"kanał {worst['name']}",
-                "title": f"{worst['name']}: ROAS poniżej 1 ({num_pl(worst['roas'])})",
-                "body": f"Kanał {worst['name']} kosztuje więcej niż przynosi przychodu "
-                        f"(ROAS {num_pl(worst['roas'])}, {num_pl(worst['revenue_net'])} zł przychodu "
-                        f"przy {num_pl(worst['spend'])} zł kosztu). "
-                        f"Ogranicz budżet lub zoptymalizuj kampanie przed dalszymi wydatkami.",
-                "confidence": "medium",
-                "supporting_metrics": [
-                    {"metric": "roas", "value": worst["roas"], "channel": worst["code"]},
-                    {"metric": "spend", "value": worst["spend"], "channel": worst["code"]},
-                ],
-            })
+            recs.append(
+                {
+                    "category": "budget_allocation",
+                    "subject": f"kanał {worst['name']}",
+                    "title": f"{worst['name']}: ROAS poniżej 1 ({num_pl(worst['roas'])})",
+                    "body": f"Kanał {worst['name']} kosztuje więcej niż przynosi przychodu "
+                    f"(ROAS {num_pl(worst['roas'])}, {num_pl(worst['revenue_net'])} zł przychodu "
+                    f"przy {num_pl(worst['spend'])} zł kosztu). "
+                    f"Ogranicz budżet lub zoptymalizuj kampanie przed dalszymi wydatkami.",
+                    "confidence": "medium",
+                    "supporting_metrics": [
+                        {"metric": "roas", "value": worst["roas"], "channel": worst["code"]},
+                        {"metric": "spend", "value": worst["spend"], "channel": worst["code"]},
+                    ],
+                }
+            )
     if agg["top_products"]:
         p = agg["top_products"][0]
-        recs.append({
-            "category": "product",
-            "subject": f"produkt {p['name']}",
-            "title": f"„{p['name']}” to najlepiej sprzedający się produkt",
-            "body": f"Produkt „{p['name']}” wygenerował {num_pl(p['revenue_net'])} zł przychodu netto w okresie. "
-                    f"Rozważ jego ekspozycję w reklamach i treściach.",
-            "confidence": "high",
-            "supporting_metrics": [{"metric": "revenue_net", "value": p["revenue_net"], "product": p["name"]}],
-        })
+        recs.append(
+            {
+                "category": "product",
+                "subject": f"produkt {p['name']}",
+                "title": f"„{p['name']}” to najlepiej sprzedający się produkt",
+                "body": f"Produkt „{p['name']}” wygenerował {num_pl(p['revenue_net'])} zł przychodu netto w okresie. "
+                f"Rozważ jego ekspozycję w reklamach i treściach.",
+                "confidence": "high",
+                "supporting_metrics": [{"metric": "revenue_net", "value": p["revenue_net"], "product": p["name"]}],
+            }
+        )
     return recs
 
 
 def _feedback_summary(db: DBSession) -> str:
     """Podsumowanie wcześniejszego feedbacku „nietrafna" - domyka pętlę feedbacku (do promptu AI)."""
-    rows = db.execute(
-        text(
-            "SELECT category, title FROM core.recommendations "
-            "WHERE feedback='nietrafna' ORDER BY created_at DESC LIMIT :lim"
-        ),
-        {"lim": FEEDBACK_LOOKBACK},
-    ).mappings().all()
+    rows = (
+        db.execute(
+            text(
+                "SELECT category, title FROM core.recommendations "
+                "WHERE feedback='nietrafna' ORDER BY created_at DESC LIMIT :lim"
+            ),
+            {"lim": FEEDBACK_LOOKBACK},
+        )
+        .mappings()
+        .all()
+    )
     if not rows:
         return ""
     lines = "\n".join(f"- [{r['category']}] {r['title']}" for r in rows)
     return (
         "\n\nWcześniejsze rekomendacje oznaczone przez właściciela jako NIETRAFNE "
-        "(unikaj powtarzania tych tez i kategorii, chyba że dane wyraźnie je teraz uzasadniają):\n"
-        + lines
+        "(unikaj powtarzania tych tez i kategorii, chyba że dane wyraźnie je teraz uzasadniają):\n" + lines
     )
 
 
-def _ai_recommendations(agg: dict, feedback_note: str = "",
-                        masker: privacy.Masker | None = None) -> list[dict] | None:
+def _ai_recommendations(agg: dict, feedback_note: str = "", masker: privacy.Masker | None = None) -> list[dict] | None:
     """Generowanie przez model czatu (structured output). Zwraca None przy braku klucza/błędzie.
 
     Z maskerem model widzi agregaty z tokenami zamiast nazw firm i osób; rekomendacje są
@@ -283,29 +307,46 @@ def _ai_recommendations(agg: dict, feedback_note: str = "",
         return None
 
     schema = {
-        "type": "object", "additionalProperties": False, "required": ["recommendations"],
-        "properties": {"recommendations": {"type": "array", "items": {
-            "type": "object", "additionalProperties": False,
-            "required": ["category", "title", "body", "confidence", "supporting_metrics"],
-            "properties": {
-                "category": {"type": "string",
-                             "enum": ["content_format", "ad_creative", "budget_allocation",
-                                      "timing", "product"]},
-                "title": {"type": "string"}, "body": {"type": "string"},
-                "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
-                "supporting_metrics": {"type": "array", "items": {"type": "object", "additionalProperties": True}},
-            },
-        }}},
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["recommendations"],
+        "properties": {
+            "recommendations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["category", "title", "body", "confidence", "supporting_metrics"],
+                    "properties": {
+                        "category": {
+                            "type": "string",
+                            "enum": ["content_format", "ad_creative", "budget_allocation", "timing", "product"],
+                        },
+                        "title": {"type": "string"},
+                        "body": {"type": "string"},
+                        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+                        "supporting_metrics": {
+                            "type": "array",
+                            "items": {"type": "object", "additionalProperties": True},
+                        },
+                    },
+                },
+            }
+        },
     }
     try:
         data = structured_json(
             client,
             model=settings.chat_model,
-            system=("Jesteś analitykiem marketingu małej polskiej firmy. Wolno Ci cytować WYŁĄCZNIE liczby "
-                    "obecne w danych wejściowych. Oznaczaj niepewność przy małych próbach. Zwięźle, po polsku."
-                    + note + (privacy.TOKENS_NOTE if masker else "")),
-            user=(f"Dane:\n{json.dumps(payload, ensure_ascii=False, default=str)}\n\n"
-                  "Zaproponuj 2-4 rekomendacje działań."),
+            system=(
+                "Jesteś analitykiem marketingu małej polskiej firmy. Wolno Ci cytować WYŁĄCZNIE liczby "
+                "obecne w danych wejściowych. Oznaczaj niepewność przy małych próbach. Zwięźle, po polsku."
+                + note
+                + (privacy.TOKENS_NOTE if masker else "")
+            ),
+            user=(
+                f"Dane:\n{json.dumps(payload, ensure_ascii=False, default=str)}\n\nZaproponuj 2-4 rekomendacje działań."
+            ),
             schema=schema,
             max_tokens=2000,
         )
@@ -349,8 +390,10 @@ def generate_recommendations(db: DBSession) -> dict:
 
     # Archiwizuj stare aktywne rekomendacje starsze niż 14 dni.
     db.execute(
-        text("UPDATE core.recommendations SET status='archived' "
-             "WHERE status='active' AND created_at < now() - make_interval(days => :days)"),
+        text(
+            "UPDATE core.recommendations SET status='archived' "
+            "WHERE status='active' AND created_at < now() - make_interval(days => :days)"
+        ),
         {"days": ARCHIVE_AFTER_DAYS},
     )
 
@@ -367,11 +410,19 @@ def generate_recommendations(db: DBSession) -> dict:
         ).scalar()
         if exists:
             continue
-        db.add(Recommendation(
-            period_from=df, period_to=dt, category=r["category"], title=r["title"], body=r["body"],
-            supporting_metrics=r.get("supporting_metrics"), confidence=r.get("confidence", "medium"),
-            dedupe_hash=h, model=(settings.chat_model if method == "ai" else "baseline"),
-        ))
+        db.add(
+            Recommendation(
+                period_from=df,
+                period_to=dt,
+                category=r["category"],
+                title=r["title"],
+                body=r["body"],
+                supporting_metrics=r.get("supporting_metrics"),
+                confidence=r.get("confidence", "medium"),
+                dedupe_hash=h,
+                model=(settings.chat_model if method == "ai" else "baseline"),
+            )
+        )
         inserted += 1
     db.commit()
     return {"status": "success", "method": method, "inserted": inserted}

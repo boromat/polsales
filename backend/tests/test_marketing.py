@@ -55,29 +55,37 @@ def test_anonimowe_zamowienia_licza_sie_jako_osobni_klienci():
         # contact_id NULL. To dwie rozne osoby, ktore zamowily telefonicznie.
         for _ in range(2):
             o = create_order(
-                db, source=OrderSource.telefon, status=OrderStatus.potwierdzone,
-                ordered_at=None, raw_nip=None, company_name=None,
-                contact_name=None, contact_email=None, contact_phone=None, notes=None,
+                db,
+                source=OrderSource.telefon,
+                status=OrderStatus.potwierdzone,
+                ordered_at=None,
+                raw_nip=None,
+                company_name=None,
+                contact_name=None,
+                contact_email=None,
+                contact_phone=None,
+                notes=None,
                 attribution_channel_id=kanal,
-                items=[{"description": "Anonimowe", "quantity": 1,
-                        "unit_price_gross": 100.0, "vat_rate": 23}],
+                items=[{"description": "Anonimowe", "quantity": 1, "unit_price_gross": 100.0, "vat_rate": 23}],
             )
             utworzone.append(o.id)
         db.commit()
         for oid in utworzone:
-            o = db.execute(text("SELECT company_id, contact_id FROM core.orders WHERE id=:i"),
-                           {"i": oid}).one()
+            o = db.execute(text("SELECT company_id, contact_id FROM core.orders WHERE id=:i"), {"i": oid}).one()
             assert o.company_id is None and o.contact_id is None, "test wymaga zamowien anonimowych"
 
         po = marketing_kpi(db, dzis - timedelta(days=1), dzis)
         przyrost = (po["cac"] is not None) or (przed["cac"] is not None)
         # Kluczowa asercja: dwa anonimowe zamowienia to DWAJ nowi klienci, nie jeden.
-        liczba = db.execute(text("""
+        liczba = db.execute(
+            text("""
             SELECT count(*) FROM (
                 SELECT COALESCE(company_id::text,'c'||contact_id::text,'o'||id::text) cust
                 FROM analytics.v_orders_all
                 WHERE status IN ('potwierdzone','zrealizowane') AND id = ANY(:ids)
-                GROUP BY 1) x"""), {"ids": utworzone}).scalar()
+                GROUP BY 1) x"""),
+            {"ids": utworzone},
+        ).scalar()
         assert liczba == 2, f"anonimowe zamowienia zlaly sie w {liczba} klienta zamiast 2"
         assert przyrost or True  # marketing_kpi nie moze rzucic wyjatku
     finally:
@@ -98,9 +106,11 @@ def test_komunikat_bledu_nie_wynosi_tokenu():
     try:
         assert _meta_auth() == {"Authorization": "Bearer EAAB_TAJNY_TOKEN_TESTOWY"}
         # Nawet gdyby jednak trafil do komunikatu - musi zostac zamaskowany.
-        komunikat = ("Client error for url "
-                     "'https://graph.facebook.com/v21.0/act_1/insights"
-                     "?access_token=EAAB_TAJNY_TOKEN_TESTOWY&limit=500'")
+        komunikat = (
+            "Client error for url "
+            "'https://graph.facebook.com/v21.0/act_1/insights"
+            "?access_token=EAAB_TAJNY_TOKEN_TESTOWY&limit=500'"
+        )
         czyste = _bez_sekretow(komunikat)
         assert "EAAB_TAJNY_TOKEN_TESTOWY" not in czyste, f"token wyciekl: {czyste}"
         assert "***" in czyste

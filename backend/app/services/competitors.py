@@ -61,16 +61,20 @@ def _tygodnie(df: date, dt: date) -> float:
 
 def profile_grupy(db: DBSession, grupa: str) -> list[dict]:
     """Skład grupy: kto, ile obserwujących, jaki przyrost, ile postów udało się zebrać."""
-    rows = db.execute(
-        text(
-            """SELECT id, name, ig_username, www, followers, przyrost_30d_pct,
+    rows = (
+        db.execute(
+            text(
+                """SELECT id, name, ig_username, www, followers, przyrost_30d_pct,
                       ostatnia_migawka, postow_zebranych
                FROM analytics.v_competitor_profiles
                WHERE grupa = :g AND is_active
                ORDER BY followers DESC NULLS LAST, name"""
-        ),
-        {"g": grupa},
-    ).mappings().all()
+            ),
+            {"g": grupa},
+        )
+        .mappings()
+        .all()
+    )
     return [
         {
             "id": r["id"],
@@ -87,16 +91,20 @@ def profile_grupy(db: DBSession, grupa: str) -> list[dict]:
 
 
 def _posty_grupy(db: DBSession, grupa: str, df: date, dt: date) -> list[dict]:
-    return db.execute(
-        text(
-            """SELECT profil, media_type, likes, comments, engagement, caption,
+    return (
+        db.execute(
+            text(
+                """SELECT profil, media_type, likes, comments, engagement, caption,
                       permalink, posted_at, source
                FROM analytics.v_competitor_posts
                WHERE grupa = :g AND post_date BETWEEN :df AND :dt
                ORDER BY engagement DESC"""
-        ),
-        {"g": grupa, "df": df, "dt": dt},
-    ).mappings().all()
+            ),
+            {"g": grupa, "df": df, "dt": dt},
+        )
+        .mappings()
+        .all()
+    )
 
 
 def statystyki_grupy(db: DBSession, grupa: str, df: date, dt: date) -> dict:
@@ -118,13 +126,15 @@ def statystyki_grupy(db: DBSession, grupa: str, df: date, dt: date) -> dict:
     }
     if not wynik["dosc_danych"]:
         # Świadomie NIE liczymy wskaźników - kilka postów da liczbę wyglądającą na pomiar.
-        wynik.update({
-            "mediana_zaangazowania": None,
-            "srednia_zaangazowania": None,
-            "postow_na_tydzien": None,
-            "formaty": [],
-            "top_posty": [],
-        })
+        wynik.update(
+            {
+                "mediana_zaangazowania": None,
+                "srednia_zaangazowania": None,
+                "postow_na_tydzien": None,
+                "formaty": [],
+                "top_posty": [],
+            }
+        )
         return wynik
 
     zaang = [float(p["engagement"]) for p in posty]
@@ -132,31 +142,33 @@ def statystyki_grupy(db: DBSession, grupa: str, df: date, dt: date) -> dict:
     for p in posty:
         licznik[p["media_type"]] = licznik.get(p["media_type"], 0) + 1
 
-    wynik.update({
-        "mediana_zaangazowania": _mediana(zaang),
-        # Średnia obok mediany - nigdy zamiast (decyzja #22). Rozjazd obu liczb sam w sobie
-        # jest informacją: duży oznacza, że grupę ciągnie kilka wyjątkowych postów.
-        "srednia_zaangazowania": round(sum(zaang) / len(zaang), 1),
-        "postow_na_tydzien": round(liczba / _tygodnie(df, dt), 1),
-        "formaty": [
-            {"media_type": k, "postow": v, "udzial": round(v / liczba, 4)}
-            for k, v in sorted(licznik.items(), key=lambda x: -x[1])
-        ],
-        "top_posty": [
-            {
-                "profil": p["profil"],
-                "media_type": p["media_type"],
-                "engagement": int(p["engagement"]),
-                "likes": int(p["likes"]),
-                "comments": int(p["comments"]),
-                # Opis skracamy - do raportu idzie próbka stylu, nie cała treść cudzego posta.
-                "caption": (p["caption"] or "")[:180],
-                "permalink": p["permalink"],
-                "posted_at": p["posted_at"].isoformat() if p["posted_at"] else None,
-            }
-            for p in posty[:3]
-        ],
-    })
+    wynik.update(
+        {
+            "mediana_zaangazowania": _mediana(zaang),
+            # Średnia obok mediany - nigdy zamiast (decyzja #22). Rozjazd obu liczb sam w sobie
+            # jest informacją: duży oznacza, że grupę ciągnie kilka wyjątkowych postów.
+            "srednia_zaangazowania": round(sum(zaang) / len(zaang), 1),
+            "postow_na_tydzien": round(liczba / _tygodnie(df, dt), 1),
+            "formaty": [
+                {"media_type": k, "postow": v, "udzial": round(v / liczba, 4)}
+                for k, v in sorted(licznik.items(), key=lambda x: -x[1])
+            ],
+            "top_posty": [
+                {
+                    "profil": p["profil"],
+                    "media_type": p["media_type"],
+                    "engagement": int(p["engagement"]),
+                    "likes": int(p["likes"]),
+                    "comments": int(p["comments"]),
+                    # Opis skracamy - do raportu idzie próbka stylu, nie cała treść cudzego posta.
+                    "caption": (p["caption"] or "")[:180],
+                    "permalink": p["permalink"],
+                    "posted_at": p["posted_at"].isoformat() if p["posted_at"] else None,
+                }
+                for p in posty[:3]
+            ],
+        }
+    )
     return wynik
 
 
@@ -166,16 +178,20 @@ def wlasny_profil(db: DBSession, df: date, dt: date) -> dict:
     Zaangażowanie własne liczymy tak samo (lajki + komentarze), z pominięciem zasięgu
     i wyświetleń, które po drugiej stronie nie istnieją.
     """
-    rows = db.execute(
-        text(
-            """SELECT post_type, count(*) AS postow,
+    rows = (
+        db.execute(
+            text(
+                """SELECT post_type, count(*) AS postow,
                       sum(likes + comments) AS zaang, sum(views) AS views
                FROM channel_organic.post_stats_daily
                WHERE date BETWEEN :df AND :dt
                GROUP BY post_type"""
-        ),
-        {"df": df, "dt": dt},
-    ).mappings().all()
+            ),
+            {"df": df, "dt": dt},
+        )
+        .mappings()
+        .all()
+    )
     razem = sum(int(r["postow"]) for r in rows)
     return {
         "postow": razem,

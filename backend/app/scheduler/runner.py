@@ -126,8 +126,13 @@ def _generate_recs_job() -> None:
 # Statusy końcowe: mail jest obsłużony i nikt nie musi już czytać jego treści. Maile czekające
 # na weryfikację (sparsowany, blad_parsowania, wspolpraca...) zostają nietknięte, inaczej retencja
 # skasowałaby treść, z której właściciel właśnie ma przepisać zamówienie.
-_RETENTION_FINAL_STATUSES = ("zamowienie_utworzone", "odrzucony_automatycznie", "odpowiedz_w_watku",
-                             "duplikat", "obsluzony_recznie")
+_RETENTION_FINAL_STATUSES = (
+    "zamowienie_utworzone",
+    "odrzucony_automatycznie",
+    "odpowiedz_w_watku",
+    "duplikat",
+    "obsluzony_recznie",
+)
 
 
 def purge_raw_emails(db, days: int) -> int:
@@ -244,23 +249,26 @@ def build_scheduler() -> BlockingScheduler:
         log.info("IMAP nieskonfigurowany - job pollingu zarejestrowany, ale będzie pomijany.")
 
     # Synchronizacje marketingowe (Etap 3) - degradują bez poświadczeń (docs/05-integracje.md).
-    sched.add_job(sync_marketing, "cron", hour="*/6", args=["meta_ads"], id="sync_meta_ads",
-                  max_instances=1, coalesce=True)
-    sched.add_job(sync_marketing, "cron", hour=3, minute=15, args=["meta_organic"],
-                  id="sync_meta_organic", coalesce=True)
-    sched.add_job(sync_marketing, "cron", hour=3, minute=30, args=["google_ads"],
-                  id="sync_google_ads", coalesce=True)
+    sched.add_job(
+        sync_marketing, "cron", hour="*/6", args=["meta_ads"], id="sync_meta_ads", max_instances=1, coalesce=True
+    )
+    sched.add_job(
+        sync_marketing, "cron", hour=3, minute=15, args=["meta_organic"], id="sync_meta_organic", coalesce=True
+    )
+    sched.add_job(sync_marketing, "cron", hour=3, minute=30, args=["google_ads"], id="sync_google_ads", coalesce=True)
     sched.add_job(sync_marketing, "cron", hour=3, minute=45, args=["ga4"], id="sync_ga4", coalesce=True)
     # Konkurencja raz na dobę (decyzja #22) - dane publiczne zmieniają się wolno, a każdy
     # przebieg to jedno zapytanie do Graph API per obserwowany profil.
-    sched.add_job(sync_marketing, "cron", hour=4, minute=30, args=["ig_competitors"],
-                  id="sync_ig_competitors", coalesce=True)
+    sched.add_job(
+        sync_marketing, "cron", hour=4, minute=30, args=["ig_competitors"], id="sync_ig_competitors", coalesce=True
+    )
 
     # Rekomendacje (Etap 5) - nocny job o 05:00.
     sched.add_job(_generate_recs_job, "cron", hour=5, minute=0, id="generate_recs", coalesce=True)
     # Zestawienie tygodniowe (Etap 7) - poniedziałek 05:30 (po syncach i rekomendacjach).
-    sched.add_job(_generate_weekly_job, "cron", day_of_week="mon", hour=5, minute=30,
-                  id="generate_weekly", coalesce=True)
+    sched.add_job(
+        _generate_weekly_job, "cron", day_of_week="mon", hour=5, minute=30, id="generate_weekly", coalesce=True
+    )
     # Retencja RODO (surowe maile) + czyszczenie wygasłych sesji - codziennie 04:00.
     sched.add_job(_retention_job, "cron", hour=4, minute=0, id="retention", coalesce=True)
     # Digest alertów biznesowych na e-mail - codziennie 08:00 (max 1 mail/dobę).

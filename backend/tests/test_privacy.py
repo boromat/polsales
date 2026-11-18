@@ -53,6 +53,7 @@ def broken_anonymize(text, mapping):
 
 # -- Masker ---------------------------------------------------------------------------------
 
+
 def test_mask_and_restore_round_trip():
     m = make_masker()
     masked = m.mask("Faktura dla Klub Sportowy Orlik, NIP 1234563218")
@@ -70,15 +71,23 @@ def test_tokens_stay_consistent_across_texts():
 def test_mask_data_keeps_keys_numbers_and_structure():
     m = make_masker()
     data = {"id": 7, "company": "Klub Sportowy Orlik", "tags": ["vip", "Anna Testowa"], "ltv": 1500.0, "x": None}
-    assert m.mask_data(data) == {"id": 7, "company": "<FIRMA_1>", "tags": ["vip", "<OSOBA_1>"],
-                                 "ltv": 1500.0, "x": None}
+    assert m.mask_data(data) == {
+        "id": 7,
+        "company": "<FIRMA_1>",
+        "tags": ["vip", "<OSOBA_1>"],
+        "ltv": 1500.0,
+        "x": None,
+    }
 
 
 def test_restore_data_in_nested_tool_arguments():
     m = make_masker()
     m.mask("NIP 1234563218")
     assert m.restore_data({"nip": "<NIP_1>", "filters": {"q": "<NIP_1>"}, "limit": 5}) == {
-        "nip": "1234563218", "filters": {"q": "1234563218"}, "limit": 5}
+        "nip": "1234563218",
+        "filters": {"q": "1234563218"},
+        "limit": 5,
+    }
 
 
 def test_unknown_tokens_are_left_untouched_and_reported():
@@ -114,8 +123,10 @@ def test_stale_tokens_in_input_are_defused():
 
 def test_mask_blocks_drops_block_types_it_cannot_mask():
     m = make_masker()
-    content = [{"type": "thinking", "thinking": "Anna Testowa...", "signature": "abc"},
-               {"type": "text", "text": "Anna Testowa"}]
+    content = [
+        {"type": "thinking", "thinking": "Anna Testowa...", "signature": "abc"},
+        {"type": "text", "text": "Anna Testowa"},
+    ]
     assert m.mask_blocks(content) == [{"type": "text", "text": "<OSOBA_1>"}]
 
 
@@ -124,8 +135,11 @@ def test_mask_blocks_touches_only_user_data():
     content = [
         {"type": "text", "text": "Ile kupił Klub Sportowy Orlik?"},
         {"type": "tool_use", "id": "toolu_1", "name": "company_profile", "input": {"nip": "1234563218"}},
-        {"type": "tool_result", "tool_use_id": "toolu_1",
-         "content": json.dumps({"name": "Klub Sportowy Orlik", "orders": 3})},
+        {
+            "type": "tool_result",
+            "tool_use_id": "toolu_1",
+            "content": json.dumps({"name": "Klub Sportowy Orlik", "orders": 3}),
+        },
     ]
     masked = m.mask_blocks(content)
     assert masked[0]["text"] == "Ile kupił <FIRMA_1>?"
@@ -137,9 +151,13 @@ def test_mask_blocks_touches_only_user_data():
 
 # -- assistant loop -------------------------------------------------------------------------
 
+
 def _resp(blocks, stop_reason="end_turn"):
-    return SimpleNamespace(content=blocks, stop_reason=stop_reason,
-                           usage=SimpleNamespace(input_tokens=10, output_tokens=5, cache_read_input_tokens=0))
+    return SimpleNamespace(
+        content=blocks,
+        stop_reason=stop_reason,
+        usage=SimpleNamespace(input_tokens=10, output_tokens=5, cache_read_input_tokens=0),
+    )
 
 
 def _text(t):
@@ -191,10 +209,14 @@ def _events(raw: list[str]) -> list[tuple[str, dict]]:
 def test_model_never_sees_real_values(monkeypatch, conversation, ro_session):
     db, conv = conversation
     # an earlier turn with personal data, already stored (real values) in the database
-    db.add(Message(conversation_id=conv.id, role="user",
-                   content=[{"type": "text", "text": "Kim jest Anna Testowa?"}]))
-    db.add(Message(conversation_id=conv.id, role="assistant",
-                   content=[{"type": "text", "text": "To kontakt: anna.testowa@orlik.example."}]))
+    db.add(Message(conversation_id=conv.id, role="user", content=[{"type": "text", "text": "Kim jest Anna Testowa?"}]))
+    db.add(
+        Message(
+            conversation_id=conv.id,
+            role="assistant",
+            content=[{"type": "text", "text": "To kontakt: anna.testowa@orlik.example."}],
+        )
+    )
     db.commit()
 
     seen_args = []
@@ -206,11 +228,22 @@ def test_model_never_sees_real_values(monkeypatch, conversation, ro_session):
     monkeypatch.setattr(assistant, "execute_tool", fake_tool)
     client = FakeClient(
         (_resp([_tool("company_profile", {"nip": "<NIP_1>"})], "tool_use"), []),
-        (_resp([_text("Najlepszy klient: <FIRMA_1>, kontakt <OSOBA_1>.")]),
-         ["Najlepszy klient: <FIR", "MA_1>, kontakt <OSO", "BA_1>."]),
+        (
+            _resp([_text("Najlepszy klient: <FIRMA_1>, kontakt <OSOBA_1>.")]),
+            ["Najlepszy klient: <FIR", "MA_1>, kontakt <OSO", "BA_1>."],
+        ),
     )
-    raw = list(assistant.run_stream(db, conv, "Pokaż profil firmy z NIP 1234563218", None, tool_db=ro_session,
-                                    client=client, masker_factory=lambda _db: make_masker()))
+    raw = list(
+        assistant.run_stream(
+            db,
+            conv,
+            "Pokaż profil firmy z NIP 1234563218",
+            None,
+            tool_db=ro_session,
+            client=client,
+            masker_factory=lambda _db: make_masker(),
+        )
+    )
     events = _events(raw)
 
     sent = client.sent_text()
@@ -228,8 +261,9 @@ def test_model_never_sees_real_values(monkeypatch, conversation, ro_session):
     assert privacy_event["labels"]["NIP"] == 1
     assert events[-1][0] == "done" and events[-1][1]["masked"] >= 3
     # the database keeps real values (it never leaves the server)
-    stored = json.dumps([m.content for m in db.scalars(
-        select(Message).where(Message.conversation_id == conv.id))], ensure_ascii=False)
+    stored = json.dumps(
+        [m.content for m in db.scalars(select(Message).where(Message.conversation_id == conv.id))], ensure_ascii=False
+    )
     assert "<FIRMA_1>" not in stored and "Klub Sportowy Orlik" in stored
     log = db.scalars(select(ToolCallLog).where(ToolCallLog.conversation_id == conv.id)).one()
     assert log.params == {"nip": "1234563218"}
@@ -242,8 +276,9 @@ def test_masking_unavailable_sends_nothing(conversation):
     def unavailable(_db):
         raise privacy.MaskingUnavailable("pakiet polanon nie jest zainstalowany")
 
-    events = _events(list(assistant.run_stream(db, conv, "Anna Testowa", None,
-                                               client=client, masker_factory=unavailable)))
+    events = _events(
+        list(assistant.run_stream(db, conv, "Anna Testowa", None, client=client, masker_factory=unavailable))
+    )
     assert client.requests == []
     assert events == [("error", events[0][1])] and events[0][1]["code"] == "masking_unavailable"
     assert "Nic nie zostało wysłane" in events[0][1]["message_pl"]
@@ -258,11 +293,22 @@ def test_failure_while_masking_a_tool_result_stops_before_next_call(monkeypatch,
         return fake_anonymize(text, mapping)
 
     monkeypatch.setattr(assistant, "execute_tool", lambda *a: {"note": "WYNIK Anna Testowa"})
-    client = FakeClient((_resp([_tool("orders_summary", {})], "tool_use"), []),
-                        (_resp([_text("nie powinno dojść")]), []))
-    events = _events(list(assistant.run_stream(
-        db, conv, "podsumuj", None, tool_db=ro_session, client=client,
-        masker_factory=lambda _db: privacy.Masker(anonymize=flaky))))
+    client = FakeClient(
+        (_resp([_tool("orders_summary", {})], "tool_use"), []), (_resp([_text("nie powinno dojść")]), [])
+    )
+    events = _events(
+        list(
+            assistant.run_stream(
+                db,
+                conv,
+                "podsumuj",
+                None,
+                tool_db=ro_session,
+                client=client,
+                masker_factory=lambda _db: privacy.Masker(anonymize=flaky),
+            )
+        )
+    )
     assert len(client.requests) == 1  # the tool result never went out
     assert events[-1][0] == "error" and events[-1][1]["code"] == "masking_unavailable"
 
@@ -270,8 +316,11 @@ def test_failure_while_masking_a_tool_result_stops_before_next_call(monkeypatch,
 def test_without_masker_behaviour_is_unchanged(conversation):
     db, conv = conversation
     client = FakeClient((_resp([_text("Cześć Anna Testowa")]), ["Cześć ", "Anna Testowa"]))
-    events = _events(list(assistant.run_stream(db, conv, "Jestem Anna Testowa", None,
-                                               client=client, masker_factory=lambda _db: None)))
+    events = _events(
+        list(
+            assistant.run_stream(db, conv, "Jestem Anna Testowa", None, client=client, masker_factory=lambda _db: None)
+        )
+    )
     assert "Anna Testowa" in client.sent_text()
     assert "ZAMASKOWANE" not in client.requests[0]["system"][0]["text"]
     assert not any(e == "privacy" for e, _ in events)
@@ -280,39 +329,65 @@ def test_without_masker_behaviour_is_unchanged(conversation):
 
 # -- e-mail parser, weekly summary, recommendations ------------------------------------------
 
+
 def test_email_parser_masks_body_and_restores_fields(monkeypatch):
     captured = {}
 
     def fake_structured(client, *, model, system, user, schema, max_tokens):
         captured.update(system=system, user=user)
-        return {"is_order": True, "confidence": 0.9, "order_type": "zamowienie",
-                "products": [{"raw_name": "Mata do jogi", "quantity": 10, "unit": "szt",
-                              "variant_notes": None, "confidence": 0.9}],
-                "customer": {"company_name": "<FIRMA_1>", "contact_person": "<OSOBA_1>",
-                             "email": "<EMAIL_1>", "phone": None, "nip": "<NIP_1>", "delivery_address": None},
-                "attribution": None, "notes": None, "ambiguities": []}
+        return {
+            "is_order": True,
+            "confidence": 0.9,
+            "order_type": "zamowienie",
+            "products": [
+                {"raw_name": "Mata do jogi", "quantity": 10, "unit": "szt", "variant_notes": None, "confidence": 0.9}
+            ],
+            "customer": {
+                "company_name": "<FIRMA_1>",
+                "contact_person": "<OSOBA_1>",
+                "email": "<EMAIL_1>",
+                "phone": None,
+                "nip": "<NIP_1>",
+                "delivery_address": None,
+            },
+            "attribution": None,
+            "notes": None,
+            "ambiguities": [],
+        }
 
     monkeypatch.setattr(email_parser_ai, "is_available", lambda: True)
     monkeypatch.setattr(email_parser_ai, "build_client", lambda: object())
     monkeypatch.setattr(email_parser_ai, "structured_json", fake_structured)
     data = email_parser_ai.parse_free_text(
-        subject="Zamówienie mat", from_addr="anna.testowa@orlik.example", from_name="Anna Testowa",
+        subject="Zamówienie mat",
+        from_addr="anna.testowa@orlik.example",
+        from_name="Anna Testowa",
         body_text="Dzień dobry, Klub Sportowy Orlik (NIP 1234563218) zamawia 10 mat do jogi. Anna Testowa",
-        when="2026-11-09", masker=make_masker())
+        when="2026-11-09",
+        masker=make_masker(),
+    )
 
     for value in SECRETS:
         assert value not in captured["user"], f"{value!r} leaked to the parser model"
     assert "ZAMASKOWANE" in captured["system"]
-    assert data["customer"] == {"company_name": "Klub Sportowy Orlik", "contact_person": "Anna Testowa",
-                                "email": "anna.testowa@orlik.example", "phone": None,
-                                "nip": "1234563218", "delivery_address": None}
+    assert data["customer"] == {
+        "company_name": "Klub Sportowy Orlik",
+        "contact_person": "Anna Testowa",
+        "email": "anna.testowa@orlik.example",
+        "phone": None,
+        "nip": "1234563218",
+        "delivery_address": None,
+    }
     assert data["extraction_method"] == "ai"
 
 
 def test_email_pipeline_fails_closed_when_masking_unavailable(monkeypatch):
     calls = []
-    monkeypatch.setattr(email_pipeline.email_classifier, "classify",
-                        lambda **kw: SimpleNamespace(is_form=False, is_partner=False, is_order=None, reason="test"))
+    monkeypatch.setattr(
+        email_pipeline.email_classifier,
+        "classify",
+        lambda **kw: SimpleNamespace(is_form=False, is_partner=False, is_order=None, reason="test"),
+    )
     monkeypatch.setattr(email_parser_ai, "is_available", lambda: True)
     monkeypatch.setattr(email_parser_ai, "structured_json", lambda *a, **k: calls.append(1))
 
@@ -320,8 +395,9 @@ def test_email_pipeline_fails_closed_when_masking_unavailable(monkeypatch):
         raise privacy.MaskingUnavailable("pakiet polanon nie jest zainstalowany")
 
     monkeypatch.setattr(email_pipeline, "build_masker", unavailable)
-    email = Email(from_addr="anna.testowa@orlik.example", subject="Zamówienie",
-                  body_text="Klub Sportowy Orlik zamawia 5 piłek.")
+    email = Email(
+        from_addr="anna.testowa@orlik.example", subject="Zamówienie", body_text="Klub Sportowy Orlik zamawia 5 piłek."
+    )
     db = SessionLocal()
     try:
         assert email_pipeline.process_email_record(db, email, []) is None
@@ -361,9 +437,17 @@ def test_recommendations_are_restored_before_validation(monkeypatch):
 
     def fake_structured(client, *, model, system, user, schema, max_tokens):
         captured["user"] = user
-        return {"recommendations": [{"category": "product", "title": "Dosprzedaj <FIRMA_1>",
-                                     "body": "<FIRMA_1> kupuje regularnie.", "confidence": "medium",
-                                     "supporting_metrics": [{"company": "<FIRMA_1>"}]}]}
+        return {
+            "recommendations": [
+                {
+                    "category": "product",
+                    "title": "Dosprzedaj <FIRMA_1>",
+                    "body": "<FIRMA_1> kupuje regularnie.",
+                    "confidence": "medium",
+                    "supporting_metrics": [{"company": "<FIRMA_1>"}],
+                }
+            ]
+        }
 
     monkeypatch.setattr(recommendations, "build_client", lambda: object())
     monkeypatch.setattr(recommendations, "structured_json", fake_structured)
@@ -374,6 +458,7 @@ def test_recommendations_are_restored_before_validation(monkeypatch):
 
 
 # -- settings ---------------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def clean_privacy_setting():
@@ -430,11 +515,14 @@ def test_known_terms_include_company_names_and_nips():
 
 def test_known_terms_include_draft_names_and_contacts():
     """A new prospect exists only as a draft (no company row yet) - its name must be masked too."""
-    db = _FakeDB(drafts=[("Klub Biegowy Przykład Sp. z o.o.", "Piotr Przykładowy"), (None, None)],
-                 contacts=["Anna Testowa", None])
+    db = _FakeDB(
+        drafts=[("Klub Biegowy Przykład Sp. z o.o.", "Piotr Przykładowy"), (None, None)],
+        contacts=["Anna Testowa", None],
+    )
     terms = privacy_settings.known_terms(db)
-    assert {"Klub Biegowy Przykład Sp. z o.o.", "Klub Biegowy Przykład", "Piotr Przykładowy",
-            "Anna Testowa"} <= set(terms)
+    assert {"Klub Biegowy Przykład Sp. z o.o.", "Klub Biegowy Przykład", "Piotr Przykładowy", "Anna Testowa"} <= set(
+        terms
+    )
 
 
 def test_build_masker_turns_any_db_error_into_masking_unavailable(monkeypatch, clean_privacy_setting):
@@ -466,15 +554,18 @@ def test_anonymizer_start_failure_is_masking_unavailable(monkeypatch):
         privacy.ensure_available(with_ner=True)
 
 
-@pytest.mark.parametrize("name, short", [
-    ("Klub Sportowy Orlik Sp. z o.o.", "Klub Sportowy Orlik"),
-    ("Demo Hurtownia Sportowa S.A.", "Demo Hurtownia Sportowa"),
-    ("Akademia Piłkarska Sp. j.", "Akademia Piłkarska"),
-    ("Biegacz s.c.", "Biegacz"),
-    ("Fitness Spółka Akcyjna", "Fitness"),
-    ("Orlik", "Orlik"),
-    ("Sp. z o.o.", "Sp. z o.o."),
-])
+@pytest.mark.parametrize(
+    "name, short",
+    [
+        ("Klub Sportowy Orlik Sp. z o.o.", "Klub Sportowy Orlik"),
+        ("Demo Hurtownia Sportowa S.A.", "Demo Hurtownia Sportowa"),
+        ("Akademia Piłkarska Sp. j.", "Akademia Piłkarska"),
+        ("Biegacz s.c.", "Biegacz"),
+        ("Fitness Spółka Akcyjna", "Fitness"),
+        ("Orlik", "Orlik"),
+        ("Sp. z o.o.", "Sp. z o.o."),
+    ],
+)
 def test_without_legal_form(name, short):
     assert privacy_settings.without_legal_form(name) == short
 
@@ -492,8 +583,9 @@ def test_privacy_settings_api(auth_client, monkeypatch, clean_privacy_setting):
     assert set(r.json()) == {"enabled", "ner", "polanon", "blocking"}
     assert set(r.json()["polanon"]) == {"installed", "version", "ner"}
 
-    monkeypatch.setattr(privacy_settings.privacy, "polanon_status",
-                        lambda: {"installed": True, "version": "x", "ner": False})
+    monkeypatch.setattr(
+        privacy_settings.privacy, "polanon_status", lambda: {"installed": True, "version": "x", "ner": False}
+    )
     r = auth_client.put("/api/settings/privacy", json={"enabled": True, "ner": True})
     assert r.status_code == 400 and "spaCy" in r.json()["detail"]
     r = auth_client.put("/api/settings/privacy", json={"enabled": True, "ner": False})

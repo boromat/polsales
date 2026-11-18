@@ -4,6 +4,7 @@ Revision ID: 0002_pipeline_maili
 Revises: 0001_initial
 Create Date: 2026-07-19
 """
+
 from __future__ import annotations
 
 from alembic import op
@@ -50,15 +51,12 @@ def upgrade() -> None:
         "WHERE status IN ('odebrany','blad_parsowania','odpowiedz_w_watku')"
     )
     op.execute("CREATE INDEX idx_emails_received ON mail.emails (date_received)")
-    op.execute(
-        "CREATE INDEX idx_drafts_status ON core.orders_draft (status) WHERE status = 'do_weryfikacji'"
-    )
+    op.execute("CREATE INDEX idx_drafts_status ON core.orders_draft (status) WHERE status = 'do_weryfikacji'")
     op.execute("CREATE INDEX idx_draft_items_draft ON core.order_draft_items (draft_id)")
 
     # Seed kursora IMAP dla domyślnego folderu.
     op.execute(
-        "INSERT INTO mail.imap_state (folder, last_seen_uid) VALUES ('INBOX', 0) "
-        "ON CONFLICT (folder) DO NOTHING"
+        "INSERT INTO mail.imap_state (folder, last_seen_uid) VALUES ('INBOX', 0) ON CONFLICT (folder) DO NOTHING"
     )
 
 

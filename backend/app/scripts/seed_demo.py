@@ -80,48 +80,200 @@ KONTAKTY = [
 # (dni_temu, nip|None, e-mail kontaktu, źródło, status, kanał, metoda atrybucji,
 #  dni od pierwszego kontaktu, [(sku, ilość, cena brutto)])
 ZAMOWIENIA = [
-    (86, "1112223332", "anna.testowa@demo.local", "email_formularz", "zrealizowane",
-     "meta_ads", "utm_formularz", 12, [("DEMO-MATA-JOGA", 20, 125)]),
-    (79, "2223334443", "katarzyna.demo@demo.local", "email_wolny", "zrealizowane",
-     "google_ads", "reczna", 9, [("DEMO-ROWER-MTB", 4, 3299), ("DEMO-KASK", 10, 229)]),
-    (71, None, "jan.probny@demo.local", "telefon", "zrealizowane",
-     "meta_ads", "reczna", 5, [("DEMO-ROWER-MTB", 1, 3499)]),
-    (64, "1112223332", "piotr.przykladowy@demo.local", "email_formularz", "zrealizowane",
-     "meta_ads", "utm_formularz", 7, [("DEMO-MATA-JOGA", 25, 119)]),
-    (58, "3334445554", "tomasz.fikcyjny@demo.local", "stacjonarnie", "zrealizowane",
-     "polecenie", "reczna", 21, [("DEMO-PILKA-5", 30, 85), ("DEMO-ODZ-BIEG", 20, 279)]),
-    (47, "4445556665", "magdalena.wzorcowa@demo.local", "email_formularz", "zrealizowane",
-     "seo_direct", "utm_formularz", 15, [("DEMO-ROWER-MTB", 6, 3399)]),
-    (41, "2223334443", "katarzyna.demo@demo.local", "email_wolny", "zrealizowane",
-     "google_ads", "reczna", 6, [("DEMO-KASK", 30, 219)]),
-    (34, None, "ewa.zmyslona@demo.local", "stacjonarnie", "zrealizowane",
-     "seo_direct", "brak", None, [("DEMO-ODZ-BIEG", 1, 299)]),
-    (28, "1112223332", "anna.testowa@demo.local", "telefon", "zrealizowane",
-     "meta_ads", "reczna", 4, [("DEMO-ODZ-BIEG", 8, 285)]),
-    (21, "3334445554", "tomasz.fikcyjny@demo.local", "email_formularz", "potwierdzone",
-     "google_ads", "utm_formularz", 11, [("DEMO-PILKA-5", 40, 82)]),
-    (14, "4445556665", "magdalena.wzorcowa@demo.local", "email_wolny", "potwierdzone",
-     "seo_direct", "brak", 8, [("DEMO-KASK", 12, 239)]),
-    (9, "2223334443", "katarzyna.demo@demo.local", "email_formularz", "potwierdzone",
-     "google_ads", "utm_formularz", 3, [("DEMO-ROWER-MTB", 5, 3299)]),
-    (5, None, "jan.probny@demo.local", "telefon", "nowe",
-     "meta_ads", "reczna", 2, [("DEMO-KASK", 1, 249)]),
-    (3, "1112223332", "piotr.przykladowy@demo.local", "email_formularz", "nowe",
-     "meta_ads", "utm_formularz", 1, [("DEMO-MATA-JOGA", 10, 125)]),
+    (
+        86,
+        "1112223332",
+        "anna.testowa@demo.local",
+        "email_formularz",
+        "zrealizowane",
+        "meta_ads",
+        "utm_formularz",
+        12,
+        [("DEMO-MATA-JOGA", 20, 125)],
+    ),
+    (
+        79,
+        "2223334443",
+        "katarzyna.demo@demo.local",
+        "email_wolny",
+        "zrealizowane",
+        "google_ads",
+        "reczna",
+        9,
+        [("DEMO-ROWER-MTB", 4, 3299), ("DEMO-KASK", 10, 229)],
+    ),
+    (
+        71,
+        None,
+        "jan.probny@demo.local",
+        "telefon",
+        "zrealizowane",
+        "meta_ads",
+        "reczna",
+        5,
+        [("DEMO-ROWER-MTB", 1, 3499)],
+    ),
+    (
+        64,
+        "1112223332",
+        "piotr.przykladowy@demo.local",
+        "email_formularz",
+        "zrealizowane",
+        "meta_ads",
+        "utm_formularz",
+        7,
+        [("DEMO-MATA-JOGA", 25, 119)],
+    ),
+    (
+        58,
+        "3334445554",
+        "tomasz.fikcyjny@demo.local",
+        "stacjonarnie",
+        "zrealizowane",
+        "polecenie",
+        "reczna",
+        21,
+        [("DEMO-PILKA-5", 30, 85), ("DEMO-ODZ-BIEG", 20, 279)],
+    ),
+    (
+        47,
+        "4445556665",
+        "magdalena.wzorcowa@demo.local",
+        "email_formularz",
+        "zrealizowane",
+        "seo_direct",
+        "utm_formularz",
+        15,
+        [("DEMO-ROWER-MTB", 6, 3399)],
+    ),
+    (
+        41,
+        "2223334443",
+        "katarzyna.demo@demo.local",
+        "email_wolny",
+        "zrealizowane",
+        "google_ads",
+        "reczna",
+        6,
+        [("DEMO-KASK", 30, 219)],
+    ),
+    (
+        34,
+        None,
+        "ewa.zmyslona@demo.local",
+        "stacjonarnie",
+        "zrealizowane",
+        "seo_direct",
+        "brak",
+        None,
+        [("DEMO-ODZ-BIEG", 1, 299)],
+    ),
+    (
+        28,
+        "1112223332",
+        "anna.testowa@demo.local",
+        "telefon",
+        "zrealizowane",
+        "meta_ads",
+        "reczna",
+        4,
+        [("DEMO-ODZ-BIEG", 8, 285)],
+    ),
+    (
+        21,
+        "3334445554",
+        "tomasz.fikcyjny@demo.local",
+        "email_formularz",
+        "potwierdzone",
+        "google_ads",
+        "utm_formularz",
+        11,
+        [("DEMO-PILKA-5", 40, 82)],
+    ),
+    (
+        14,
+        "4445556665",
+        "magdalena.wzorcowa@demo.local",
+        "email_wolny",
+        "potwierdzone",
+        "seo_direct",
+        "brak",
+        8,
+        [("DEMO-KASK", 12, 239)],
+    ),
+    (
+        9,
+        "2223334443",
+        "katarzyna.demo@demo.local",
+        "email_formularz",
+        "potwierdzone",
+        "google_ads",
+        "utm_formularz",
+        3,
+        [("DEMO-ROWER-MTB", 5, 3299)],
+    ),
+    (5, None, "jan.probny@demo.local", "telefon", "nowe", "meta_ads", "reczna", 2, [("DEMO-KASK", 1, 249)]),
+    (
+        3,
+        "1112223332",
+        "piotr.przykladowy@demo.local",
+        "email_formularz",
+        "nowe",
+        "meta_ads",
+        "utm_formularz",
+        1,
+        [("DEMO-MATA-JOGA", 10, 125)],
+    ),
     # Anulowane - żeby było widać, że NIE wchodzi do LTV ani do metryk.
-    (52, "3334445554", "tomasz.fikcyjny@demo.local", "email_wolny", "anulowane",
-     "polecenie", "reczna", 6, [("DEMO-PILKA-5", 20, 89)]),
+    (
+        52,
+        "3334445554",
+        "tomasz.fikcyjny@demo.local",
+        "email_wolny",
+        "anulowane",
+        "polecenie",
+        "reczna",
+        6,
+        [("DEMO-PILKA-5", 20, 89)],
+    ),
 ]
 
 # Szkice w Skrzynce czekają na ręczne zatwierdzenie, więc z założenia NIE liczą się do
 # żadnej metryki (decyzja #2). Pokazują sam tor: mail → parser → weryfikacja.
 SZKICE = [
-    ("reguly", 0.910, "1112223332", "Demo Siłownia Testowa Sp. z o.o.",
-     "Anna Testowa", "anna.testowa.zapytanie@demo.local", "Mata do jogi 6 mm", 15, 125),
-    ("ai", 0.640, None, "Demo Klub Biegowy Przykład",
-     "Marek Przykładowy", "marek.przykladowy@demo.local", "Komplet odzieży biegowej", 12, 289),
-    ("ai", 0.480, None, "Demo Szkoła Podstawowa nr 0",
-     "Barbara Wzorcowa", "barbara.wzorcowa@demo.local", "Piłki do siatkówki", 10, 79),
+    (
+        "reguly",
+        0.910,
+        "1112223332",
+        "Demo Siłownia Testowa Sp. z o.o.",
+        "Anna Testowa",
+        "anna.testowa.zapytanie@demo.local",
+        "Mata do jogi 6 mm",
+        15,
+        125,
+    ),
+    (
+        "ai",
+        0.640,
+        None,
+        "Demo Klub Biegowy Przykład",
+        "Marek Przykładowy",
+        "marek.przykladowy@demo.local",
+        "Komplet odzieży biegowej",
+        12,
+        289,
+    ),
+    (
+        "ai",
+        0.480,
+        None,
+        "Demo Szkoła Podstawowa nr 0",
+        "Barbara Wzorcowa",
+        "barbara.wzorcowa@demo.local",
+        "Piłki do siatkówki",
+        10,
+        79,
+    ),
 ]
 
 
@@ -199,9 +351,16 @@ def _wstaw_zamowienia(db) -> int:
                 RETURNING id
             """),
             {
-                "order_no": order_no, "nip": nip, "email": email, "zrodlo": zrodlo,
-                "status": status, "dni": dni, "godz": 9 + (i % 8), "lead_dni": lead_dni,
-                "kanal": kanal, "metoda": metoda,
+                "order_no": order_no,
+                "nip": nip,
+                "email": email,
+                "zrodlo": zrodlo,
+                "status": status,
+                "dni": dni,
+                "godz": 9 + (i % 8),
+                "lead_dni": lead_dni,
+                "kanal": kanal,
+                "metoda": metoda,
                 "utm_source": {"meta_ads": "facebook", "google_ads": "google"}.get(kanal),
                 "utm_medium": "cpc" if kanal in ("meta_ads", "google_ads") else None,
                 "utm_campaign": "demo-sezon-rowerowy" if metoda == "utm_formularz" else None,
@@ -240,8 +399,15 @@ def _wstaw_szkice(db) -> int:
                         '[DEMO] dane przykładowe', now() - :nr * interval '1 day')
                 RETURNING id
             """),
-            {"metoda": metoda, "pewnosc": pewnosc, "nip": nip,
-             "firma": firma, "osoba": osoba, "email": email, "nr": nr},
+            {
+                "metoda": metoda,
+                "pewnosc": pewnosc,
+                "nip": nip,
+                "firma": firma,
+                "osoba": osoba,
+                "email": email,
+                "nr": nr,
+            },
         ).scalar_one()
         # `raw_name` to nazwa tak, jak padła w mailu; dopasowanie do katalogu robi parser.
         # Dwa pierwsze szkice mają produkt rozpoznany, trzeci nie - żeby w Skrzynce było
@@ -293,8 +459,15 @@ def _wstaw_marketing(db) -> dict:
                             :imp, :clk, :spend, 0, 'demo')
                     ON CONFLICT (date, ad_id) DO NOTHING
                 """),
-                {"d": dzien, "ad_id": ad_id, "ad_name": ad_name, "kreacja": kreacja,
-                 "imp": int(imp * fala), "clk": int(clk * fala), "spend": round(spend * fala, 2)},
+                {
+                    "d": dzien,
+                    "ad_id": ad_id,
+                    "ad_name": ad_name,
+                    "kreacja": kreacja,
+                    "imp": int(imp * fala),
+                    "clk": int(clk * fala),
+                    "spend": round(spend * fala, 2),
+                },
             ).rowcount
 
         for cid, cname, typ, imp, clk, spend in [
@@ -309,8 +482,15 @@ def _wstaw_marketing(db) -> dict:
                     VALUES (:d, :cid, :cname, :typ, :imp, :clk, :spend, 0, 'demo')
                     ON CONFLICT (date, campaign_id) DO NOTHING
                 """),
-                {"d": dzien, "cid": cid, "cname": cname, "typ": typ,
-                 "imp": int(imp * fala), "clk": int(clk * fala), "spend": round(spend * fala, 2)},
+                {
+                    "d": dzien,
+                    "cid": cid,
+                    "cname": cname,
+                    "typ": typ,
+                    "imp": int(imp * fala),
+                    "clk": int(clk * fala),
+                    "spend": round(spend * fala, 2),
+                },
             ).rowcount
 
         # (source, medium) muszą pasować do `core.channel_mapping`, inaczej sesje wpadną
@@ -320,8 +500,10 @@ def _wstaw_marketing(db) -> dict:
         # dochodzi do pomiaru GA4 (odbicia, blokery, powroty). Odwrotna proporcja też bywa
         # poprawna, ale tu chodzi o to, żeby przejście kliknięcia→sesje nie wyglądało na błąd.
         for zrodlo, medium, sesje in [
-            ("facebook", "cpc", 20), ("google", "cpc", 29),
-            ("google", "organic", 12), ("(direct)", "(none)", 9),
+            ("facebook", "cpc", 20),
+            ("google", "cpc", 29),
+            ("google", "organic", 12),
+            ("(direct)", "(none)", 9),
         ]:
             liczniki["ga4"] += db.execute(
                 text("""
@@ -331,17 +513,27 @@ def _wstaw_marketing(db) -> dict:
                     VALUES (:d, :zrodlo, :medium, 'demo-sezon-rowerowy', :s, :es, :u, :nu, :ke)
                     ON CONFLICT (date, source, medium, campaign) DO NOTHING
                 """),
-                {"d": dzien, "zrodlo": zrodlo, "medium": medium,
-                 "s": int(sesje * fala), "es": int(sesje * fala * 0.62),
-                 "u": int(sesje * fala * 0.88), "nu": int(sesje * fala * 0.61),
-                 "ke": int(sesje * fala * 0.05)},
+                {
+                    "d": dzien,
+                    "zrodlo": zrodlo,
+                    "medium": medium,
+                    "s": int(sesje * fala),
+                    "es": int(sesje * fala * 0.62),
+                    "u": int(sesje * fala * 0.88),
+                    "nu": int(sesje * fala * 0.61),
+                    "ke": int(sesje * fala * 0.05),
+                },
             ).rowcount
 
         # Post co 3 dni - realistyczny rytm publikacji małej firmy.
         if d % 3 == 0:
             nr = d // 3
-            typ, platforma = [("reel", "instagram"), ("photo", "facebook"),
-                              ("carousel", "instagram"), ("video", "facebook")][nr % 4]
+            typ, platforma = [
+                ("reel", "instagram"),
+                ("photo", "facebook"),
+                ("carousel", "instagram"),
+                ("video", "facebook"),
+            ][nr % 4]
             baza = {"reel": 2100, "photo": 780, "carousel": 1150, "video": 1400}[typ]
             liczniki["organic"] += db.execute(
                 text("""
@@ -351,10 +543,18 @@ def _wstaw_marketing(db) -> dict:
                     VALUES (:d, :pid, :plat, :typ, :views, :reach, :likes, :com, :sh, :lc, 'demo')
                     ON CONFLICT (date, post_id) DO NOTHING
                 """),
-                {"d": dzien, "pid": f"demo-post-{nr}", "plat": platforma, "typ": typ,
-                 "views": int(baza * fala), "reach": int(baza * fala * 0.86),
-                 "likes": int(baza * fala * 0.035), "com": int(baza * fala * 0.005),
-                 "sh": int(baza * fala * 0.006), "lc": int(baza * fala * 0.013)},
+                {
+                    "d": dzien,
+                    "pid": f"demo-post-{nr}",
+                    "plat": platforma,
+                    "typ": typ,
+                    "views": int(baza * fala),
+                    "reach": int(baza * fala * 0.86),
+                    "likes": int(baza * fala * 0.035),
+                    "com": int(baza * fala * 0.005),
+                    "sh": int(baza * fala * 0.006),
+                    "lc": int(baza * fala * 0.013),
+                },
             ).rowcount
 
     return liczniki
@@ -363,11 +563,16 @@ def _wstaw_marketing(db) -> dict:
 # Lustrzane odbicie wstawiania. Kolejność ma znaczenie: dzieci przed rodzicami - mimo
 # ON DELETE CASCADE kasujemy jawnie, żeby licznik pokazał, co faktycznie zniknęło.
 USUN = [
-    ("core.order_draft_items", "DELETE FROM core.order_draft_items WHERE draft_id IN "
-                               "(SELECT id FROM core.orders_draft WHERE notes LIKE '[DEMO]%')"),
+    (
+        "core.order_draft_items",
+        "DELETE FROM core.order_draft_items WHERE draft_id IN "
+        "(SELECT id FROM core.orders_draft WHERE notes LIKE '[DEMO]%')",
+    ),
     ("core.orders_draft", "DELETE FROM core.orders_draft WHERE notes LIKE '[DEMO]%'"),
-    ("core.order_items", "DELETE FROM core.order_items WHERE order_id IN "
-                         "(SELECT id FROM core.orders WHERE order_no LIKE 'DEMO-%')"),
+    (
+        "core.order_items",
+        "DELETE FROM core.order_items WHERE order_id IN (SELECT id FROM core.orders WHERE order_no LIKE 'DEMO-%')",
+    ),
     ("core.orders", "DELETE FROM core.orders WHERE order_no LIKE 'DEMO-%'"),
     ("core.contacts", "DELETE FROM core.contacts WHERE email LIKE '%@demo.local'"),
     ("core.companies", "DELETE FROM core.companies WHERE notes LIKE '[DEMO]%'"),
@@ -380,8 +585,11 @@ USUN = [
 
 STAN = [
     ("core.orders", "SELECT count(*) FROM core.orders WHERE order_no LIKE 'DEMO-%'"),
-    ("core.order_items", "SELECT count(*) FROM core.order_items WHERE order_id IN "
-                         "(SELECT id FROM core.orders WHERE order_no LIKE 'DEMO-%')"),
+    (
+        "core.order_items",
+        "SELECT count(*) FROM core.order_items WHERE order_id IN "
+        "(SELECT id FROM core.orders WHERE order_no LIKE 'DEMO-%')",
+    ),
     ("core.companies", "SELECT count(*) FROM core.companies WHERE notes LIKE '[DEMO]%'"),
     ("core.contacts", "SELECT count(*) FROM core.contacts WHERE email LIKE '%@demo.local'"),
     ("core.products", "SELECT count(*) FROM core.products WHERE sku LIKE 'DEMO-%'"),
@@ -389,8 +597,7 @@ STAN = [
     ("channel_meta.ads_daily", "SELECT count(*) FROM channel_meta.ads_daily WHERE source = 'demo'"),
     ("channel_google.ads_daily", "SELECT count(*) FROM channel_google.ads_daily WHERE source = 'demo'"),
     ("channel_ga4.traffic_daily", "SELECT count(*) FROM channel_ga4.traffic_daily WHERE campaign LIKE 'demo-%'"),
-    ("channel_organic.post_stats_daily",
-     "SELECT count(*) FROM channel_organic.post_stats_daily WHERE source = 'demo'"),
+    ("channel_organic.post_stats_daily", "SELECT count(*) FROM channel_organic.post_stats_daily WHERE source = 'demo'"),
 ]
 
 

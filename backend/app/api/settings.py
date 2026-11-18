@@ -34,8 +34,8 @@ def config_status(db: DBSession = Depends(get_db)) -> dict:
         "meta_organic": bool(settings.meta_access_token and settings.meta_page_id),
         "ga4": bool(settings.ga4_service_account_json and settings.ga4_property_id),
         "google_ads": bool(settings.google_ads_developer_token and settings.google_ads_customer_id),
-        "anthropic": ai_configured(),          # klucz historyczny: „asystent AI działa"
-        "ai_provider": provider_name(),        # "openrouter" | "anthropic" | ""
+        "anthropic": ai_configured(),  # klucz historyczny: „asystent AI działa"
+        "ai_provider": provider_name(),  # "openrouter" | "anthropic" | ""
         "smtp": smtp_configured(),
         "chat_model": resolve_model(settings.chat_model),
         "email_parser_model": resolve_model(settings.email_parser_model),
@@ -62,7 +62,7 @@ def put_privacy(data: PrivacyIn, db: DBSession = Depends(get_db)) -> dict:
         raise HTTPException(
             status_code=400,
             detail="Tryb NER wymaga spaCy i modelu pl_core_news_md "
-                   "(pip install \"polanon[ner]\" && python -m spacy download pl_core_news_md).",
+            '(pip install "polanon[ner]" && python -m spacy download pl_core_news_md).',
         )
     save_privacy_settings(db, PrivacySettings(enabled=data.enabled, ner=data.ner))
     return privacy_status(db)

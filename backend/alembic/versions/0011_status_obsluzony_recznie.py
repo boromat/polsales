@@ -18,8 +18,16 @@ down_revision = "0010_klucz_klienta_cac"
 branch_labels = None
 depends_on = None
 
-_STARE = ("odebrany", "sklasyfikowany", "sparsowany", "zamowienie_utworzone",
-          "odrzucony_automatycznie", "blad_parsowania", "odpowiedz_w_watku", "duplikat")
+_STARE = (
+    "odebrany",
+    "sklasyfikowany",
+    "sparsowany",
+    "zamowienie_utworzone",
+    "odrzucony_automatycznie",
+    "blad_parsowania",
+    "odpowiedz_w_watku",
+    "duplikat",
+)
 _NOWE = (*_STARE, "obsluzony_recznie")
 
 

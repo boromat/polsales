@@ -24,7 +24,9 @@ NOTATKA = "TEST-TOZSAMOSC"
 def _sprzataj(db) -> None:
     db.execute(
         text("""DELETE FROM core.order_items WHERE order_id IN
-                 (SELECT id FROM core.orders WHERE notes = :n)"""), {"n": NOTATKA})
+                 (SELECT id FROM core.orders WHERE notes = :n)"""),
+        {"n": NOTATKA},
+    )
     db.execute(text("DELETE FROM core.orders WHERE notes = :n"), {"n": NOTATKA})
     db.execute(text("DELETE FROM core.contacts WHERE full_name LIKE :n"), {"n": f"{NOTATKA}%"})
     db.commit()
@@ -43,8 +45,7 @@ def _zamow(db, *, email=None, telefon=None, nazwa="Klient") -> int:
         contact_phone=telefon,
         attribution_channel_id=None,
         notes=NOTATKA,
-        items=[{"description": f"{NOTATKA} pozycja", "quantity": 1,
-                "unit_price_gross": 100.0, "vat_rate": 23}],
+        items=[{"description": f"{NOTATKA} pozycja", "quantity": 1, "unit_price_gross": 100.0, "vat_rate": 23}],
     )
     db.commit()
     return o.id
@@ -52,9 +53,12 @@ def _zamow(db, *, email=None, telefon=None, nazwa="Klient") -> int:
 
 def _klucze(db) -> list[str]:
     return [
-        r[0] for r in db.execute(
-            text("SELECT customer_key FROM analytics.v_orders_all WHERE id IN "
-                 "(SELECT id FROM core.orders WHERE notes = :n) ORDER BY id"),
+        r[0]
+        for r in db.execute(
+            text(
+                "SELECT customer_key FROM analytics.v_orders_all WHERE id IN "
+                "(SELECT id FROM core.orders WHERE notes = :n) ORDER BY id"
+            ),
             {"n": NOTATKA},
         ).all()
     ]
@@ -95,9 +99,9 @@ def test_ta_sama_osoba_raz_mailem_raz_telefonem(db):
     """
     mail = f"mieszany-{uuid.uuid4().hex[:8]}@test.example"
     tel = f"6{uuid.uuid4().int % 100000000:08d}"
-    _zamow(db, email=mail, telefon=tel, nazwa="formularz")   # komplet danych
-    _zamow(db, telefon=tel, nazwa="telefon")                 # tylko numer
-    _zamow(db, email=mail, nazwa="mail")                     # tylko mail
+    _zamow(db, email=mail, telefon=tel, nazwa="formularz")  # komplet danych
+    _zamow(db, telefon=tel, nazwa="telefon")  # tylko numer
+    _zamow(db, email=mail, nazwa="mail")  # tylko mail
 
     klucze = _klucze(db)
     assert len(set(klucze)) == 1, f"ta sama osoba rozbita na kilku klientow: {klucze}"

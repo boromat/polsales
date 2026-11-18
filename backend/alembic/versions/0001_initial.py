@@ -4,6 +4,7 @@ Revision ID: 0001_initial
 Revises:
 Create Date: 2026-07-19
 """
+
 from __future__ import annotations
 
 from alembic import op
@@ -41,20 +42,12 @@ def upgrade() -> None:
     Base.metadata.create_all(bind=bind)
 
     # 3. Indeksy pomocnicze.
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_orders_ordered_at ON core.orders (ordered_at)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_orders_company "
-        "ON core.orders (company_id) WHERE company_id IS NOT NULL"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_orders_ordered_at ON core.orders (ordered_at)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_orders_company ON core.orders (company_id) WHERE company_id IS NOT NULL")
     op.execute("CREATE INDEX IF NOT EXISTS idx_orders_status ON core.orders (status)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_order_items_order ON core.order_items (order_id)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_contacts_company ON core.contacts (company_id)")
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_companies_name_trgm "
-        "ON core.companies USING gin (name gin_trgm_ops)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_companies_name_trgm ON core.companies USING gin (name gin_trgm_ops)")
     op.execute(
         "CREATE INDEX IF NOT EXISTS idx_sync_commands_pending "
         "ON ops.sync_commands (created_at) WHERE status = 'pending'"
@@ -176,9 +169,7 @@ def upgrade() -> None:
     )
     op.execute("GRANT USAGE ON SCHEMA analytics TO assistant_ro")
     op.execute("GRANT SELECT ON ALL TABLES IN SCHEMA analytics TO assistant_ro")
-    op.execute(
-        "ALTER DEFAULT PRIVILEGES IN SCHEMA analytics GRANT SELECT ON TABLES TO assistant_ro"
-    )
+    op.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA analytics GRANT SELECT ON TABLES TO assistant_ro")
 
     # 8. Seed słowników.
     op.execute(

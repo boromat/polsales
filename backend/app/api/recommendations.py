@@ -13,9 +13,7 @@ from app.db.models.recommendations import Recommendation
 from app.deps import get_current_user
 from app.services.recommendations import generate_recommendations
 
-router = APIRouter(
-    prefix="/api/recommendations", tags=["recommendations"], dependencies=[Depends(get_current_user)]
-)
+router = APIRouter(prefix="/api/recommendations", tags=["recommendations"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("")

@@ -32,9 +32,7 @@ assistant_engine = create_engine(
         "connect_timeout": 5,
     },
 )
-AssistantSessionLocal = sessionmaker(
-    bind=assistant_engine, autoflush=False, expire_on_commit=False, future=True
-)
+AssistantSessionLocal = sessionmaker(bind=assistant_engine, autoflush=False, expire_on_commit=False, future=True)
 
 
 class Base(DeclarativeBase):

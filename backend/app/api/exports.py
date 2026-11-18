@@ -38,9 +38,10 @@ def export_orders(db: DBSession = Depends(get_db)) -> Response:
     # 'anulowane'), aby eksport pokrywał się z listą zamówień w UI - zawiera wszystkie
     # statusy, w tym anulowane. JOIN firm powiela logikę widoku (scalanie duplikatów:
     # merged_into_id). ordered_at::date bucketuje w Europe/Warsaw (decyzja #17).
-    rows = db.execute(
-        text(
-            """SELECT o.order_no,
+    rows = (
+        db.execute(
+            text(
+                """SELECT o.order_no,
                       o.ordered_at::date         AS order_date,
                       COALESCE(c2.name, c.name)  AS company_name,
                       COALESCE(c2.nip, c.nip)    AS nip,
@@ -49,16 +50,30 @@ def export_orders(db: DBSession = Depends(get_db)) -> Response:
                LEFT JOIN core.companies c  ON c.id = o.company_id
                LEFT JOIN core.companies c2 ON c2.id = c.merged_into_id
                ORDER BY o.ordered_at DESC"""
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["nr", "data", "firma", "nip", "zrodlo", "status", "netto", "brutto"])
     for r in rows:
-        w.writerow([_csv_safe(x) for x in [
-            r["order_no"], r["order_date"].isoformat(), r["company_name"] or "", r["nip"] or "",
-            r["source"], r["status"], r["total_net"], r["total_gross"],
-        ]])
+        w.writerow(
+            [
+                _csv_safe(x)
+                for x in [
+                    r["order_no"],
+                    r["order_date"].isoformat(),
+                    r["company_name"] or "",
+                    r["nip"] or "",
+                    r["source"],
+                    r["status"],
+                    r["total_net"],
+                    r["total_gross"],
+                ]
+            ]
+        )
     return Response(
         content=buf.getvalue(),
         media_type="text/csv",
@@ -100,14 +115,19 @@ def import_historical(db: DBSession = Depends(get_db), content: str = Body(..., 
                     status=OrderStatus.zrealizowane,
                     raw_nip=row.get("nip"),
                     company_name=row.get("firma") or row.get("nazwa_firmy"),
-                    contact_name=None, contact_email=None, contact_phone=None,
-                    attribution_channel_id=None, notes="import historyczny",
-                    items=[{
-                        "description": row.get("produkt") or "Pozycja",
-                        "quantity": _num(row.get("ilosc") or "1") or 1,
-                        "unit_price_gross": _num(row.get("cena_brutto") or row.get("cena") or "0"),
-                        "vat_rate": _num(row.get("vat") or "23"),
-                    }],
+                    contact_name=None,
+                    contact_email=None,
+                    contact_phone=None,
+                    attribution_channel_id=None,
+                    notes="import historyczny",
+                    items=[
+                        {
+                            "description": row.get("produkt") or "Pozycja",
+                            "quantity": _num(row.get("ilosc") or "1") or 1,
+                            "unit_price_gross": _num(row.get("cena_brutto") or row.get("cena") or "0"),
+                            "vat_rate": _num(row.get("vat") or "23"),
+                        }
+                    ],
                 )
             created += 1
         except Exception as exc:  # noqa: BLE001

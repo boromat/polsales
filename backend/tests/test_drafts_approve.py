@@ -86,8 +86,13 @@ def test_zatwierdzenie_szkicu_tworzy_zamowienie_z_atrybucja(auth_client: TestCli
         "contact_name": "Ewa Testowa",
         "contact_email": "ewa@test-approve.example",
         "items": [
-            {"raw_name": it["raw_name"], "description": it["raw_name"],
-             "quantity": it["quantity"] or 1, "unit_price_gross": 50.0, "vat_rate": 23}
+            {
+                "raw_name": it["raw_name"],
+                "description": it["raw_name"],
+                "quantity": it["quantity"] or 1,
+                "unit_price_gross": 50.0,
+                "vat_rate": 23,
+            }
             for it in detal["items"]
         ],
     }
@@ -133,8 +138,13 @@ def test_reczna_korekta_kanalu_daje_metode_reczna(auth_client: TestClient, szkic
             "source": "email_formularz",
             "attribution_channel_id": SEO_DIRECT,  # ręczna korekta wbrew UTM-om z maila
             "items": [
-                {"raw_name": it["raw_name"], "description": it["raw_name"],
-                 "quantity": it["quantity"] or 1, "unit_price_gross": 50.0, "vat_rate": 23}
+                {
+                    "raw_name": it["raw_name"],
+                    "description": it["raw_name"],
+                    "quantity": it["quantity"] or 1,
+                    "unit_price_gross": 50.0,
+                    "vat_rate": 23,
+                }
                 for it in detal["items"]
             ],
         },

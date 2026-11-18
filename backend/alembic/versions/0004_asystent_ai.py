@@ -4,6 +4,7 @@ Revision ID: 0004_asystent_ai
 Revises: 0003_integracje
 Create Date: 2026-07-19
 """
+
 from __future__ import annotations
 
 from alembic import op

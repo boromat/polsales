@@ -24,10 +24,7 @@ CSV_TRESC = (
 def _posprzataj(db) -> None:
     db.execute(text("DELETE FROM core.order_items WHERE description = :d"), {"d": OPIS})
     db.execute(
-        text(
-            "DELETE FROM core.orders WHERE notes = 'import historyczny' "
-            "AND ordered_at < TIMESTAMPTZ '2000-01-01'"
-        )
+        text("DELETE FROM core.orders WHERE notes = 'import historyczny' AND ordered_at < TIMESTAMPTZ '2000-01-01'")
     )
     db.commit()
 

@@ -56,9 +56,7 @@ def resolve_channel_from_utm(
     # 2. Wspólna tabela mapowania (ta sama, z której korzysta widok sesji GA4).
     if src and med:
         found = db.scalar(
-            select(ChannelMapping.channel_id).where(
-                ChannelMapping.ga4_source == src, ChannelMapping.ga4_medium == med
-            )
+            select(ChannelMapping.channel_id).where(ChannelMapping.ga4_source == src, ChannelMapping.ga4_medium == med)
         )
         if found:
             return found

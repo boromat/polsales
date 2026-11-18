@@ -98,8 +98,9 @@ def _confidence(data: dict) -> float:
         return 1.0
 
 
-def build_user_content(*, subject: str | None, from_addr: str | None, from_name: str | None,
-                       body_text: str, when: str) -> str:
+def build_user_content(
+    *, subject: str | None, from_addr: str | None, from_name: str | None, body_text: str, when: str
+) -> str:
     """Wiadomość do modelu: data odebrania od nas, a wszystko, co napisał nadawca, w znacznikach danych.
 
     Nadawca i temat też pochodzą od obcej osoby, więc są w tym samym bloku co treść."""
@@ -111,8 +112,12 @@ def _extract(client: object, model: str, user_content: str, system: str = SYSTEM
     """Jedno wywołanie modelu -> schemat ekstrakcji lub None (błąd/pusta odpowiedź)."""
     try:
         data = structured_json(
-            client, model=model, system=system, user=user_content,
-            schema=EXTRACTION_SCHEMA, max_tokens=2000,
+            client,
+            model=model,
+            system=system,
+            user=user_content,
+            schema=EXTRACTION_SCHEMA,
+            max_tokens=2000,
         )
         if not data:
             return None
@@ -124,8 +129,13 @@ def _extract(client: object, model: str, user_content: str, system: str = SYSTEM
 
 
 def parse_free_text(
-    *, subject: str | None, from_addr: str | None, from_name: str | None,
-    body_text: str, when: str, masker: privacy.Masker | None = None,
+    *,
+    subject: str | None,
+    from_addr: str | None,
+    from_name: str | None,
+    body_text: str,
+    when: str,
+    masker: privacy.Masker | None = None,
 ) -> dict | None:
     """Ekstrakcja przez Claude Haiku, z eskalacją do mocniejszego modelu przy niskiej pewności.
 
@@ -147,11 +157,13 @@ def parse_free_text(
 
     tresc = body_text or ""
     if len(tresc) > MAX_BODY_CHARS:
-        log.warning("Mail dłuższy niż %s znaków (%s) - przycinam przed wysłaniem do modelu.",
-                    MAX_BODY_CHARS, len(tresc))
+        log.warning(
+            "Mail dłuższy niż %s znaków (%s) - przycinam przed wysłaniem do modelu.", MAX_BODY_CHARS, len(tresc)
+        )
         tresc = tresc[:MAX_BODY_CHARS] + "\n[...treść przycięta...]"
     user_content = build_user_content(
-        subject=subject, from_addr=from_addr, from_name=from_name, body_text=tresc, when=when)
+        subject=subject, from_addr=from_addr, from_name=from_name, body_text=tresc, when=when
+    )
 
     system = SYSTEM_PROMPT
     if masker is not None:

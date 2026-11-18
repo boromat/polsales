@@ -44,12 +44,8 @@ def match_product(db: DBSession, raw_name: str) -> dict:
     # Kandydaci (znormalizowany_tekst, product_id): nazwa produktu + wszystkie jego aliasy.
     candidates: list[tuple[str, int]] = [(normalize_name(p.name), p.id) for p in products]
     if by_id:
-        aliases = db.scalars(
-            select(ProductAlias).where(ProductAlias.product_id.in_(by_id.keys()))
-        ).all()
-        candidates += [
-            (a.raw_name_normalized, a.product_id) for a in aliases if a.raw_name_normalized
-        ]
+        aliases = db.scalars(select(ProductAlias).where(ProductAlias.product_id.in_(by_id.keys()))).all()
+        candidates += [(a.raw_name_normalized, a.product_id) for a in aliases if a.raw_name_normalized]
 
     # Najlepszy wynik per produkt (produkt ma nazwę i może mieć wiele aliasów).
     best_by_product: dict[int, float] = {}

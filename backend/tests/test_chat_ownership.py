@@ -82,7 +82,8 @@ def test_other_account_cannot_list_open_or_write_to_it(auth_client, other_client
 
     assert conv_id in [c["id"] for c in auth_client.get("/api/chat/conversations").json()]
     assert auth_client.get(f"/api/chat/conversations/{conv_id}/messages").json() == [
-        {"role": "user", "text": "Ile zamówień?"}]
+        {"role": "user", "text": "Ile zamówień?"}
+    ]
 
     assert conv_id not in [c["id"] for c in other_client.get("/api/chat/conversations").json()]
     opened = other_client.get(f"/api/chat/conversations/{conv_id}/messages")
@@ -105,6 +106,7 @@ def test_own_conversation_still_streams(auth_client, created):
 
 # -- migration 0020 ------------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def schema_before_0020():
     """chat.conversations as it was before 0020 (no owner), in a transaction that is rolled back."""
@@ -112,9 +114,9 @@ def schema_before_0020():
     trans = conn.begin()
     conn.execute(text("SET LOCAL lock_timeout = '5s'"))
     conn.execute(text("ALTER TABLE chat.conversations DROP COLUMN user_id"))
-    conv_id = conn.execute(text(
-        "INSERT INTO chat.conversations (id, title) VALUES (gen_random_uuid(), 'sprzed migracji') RETURNING id"
-    )).scalar()
+    conv_id = conn.execute(
+        text("INSERT INTO chat.conversations (id, title) VALUES (gen_random_uuid(), 'sprzed migracji') RETURNING id")
+    ).scalar()
     yield conn, conv_id
     trans.rollback()
     conn.close()
@@ -133,13 +135,19 @@ def test_migration_gives_existing_conversations_to_the_first_account(schema_befo
     _upgrade(conn)
     first = conn.execute(text("SELECT id FROM ops.users ORDER BY created_at, id LIMIT 1")).scalar()
     assert conn.execute(text("SELECT user_id FROM chat.conversations WHERE id = :c"), {"c": conv_id}).scalar() == first
-    nullable = conn.execute(text(
-        "SELECT is_nullable FROM information_schema.columns "
-        "WHERE table_schema = 'chat' AND table_name = 'conversations' AND column_name = 'user_id'")).scalar()
+    nullable = conn.execute(
+        text(
+            "SELECT is_nullable FROM information_schema.columns "
+            "WHERE table_schema = 'chat' AND table_name = 'conversations' AND column_name = 'user_id'"
+        )
+    ).scalar()
     assert nullable == "NO"
-    fk = conn.execute(text(
-        "SELECT confrelid::regclass::text FROM pg_constraint "
-        "WHERE conrelid = 'chat.conversations'::regclass AND conname = 'conversations_user_id_fkey'")).scalar()
+    fk = conn.execute(
+        text(
+            "SELECT confrelid::regclass::text FROM pg_constraint "
+            "WHERE conrelid = 'chat.conversations'::regclass AND conname = 'conversations_user_id_fkey'"
+        )
+    ).scalar()
     assert fk == "ops.users"
 
 

@@ -13,13 +13,15 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import settings
 
 # --- Logowanie: jedna centralna konfiguracja (konsola, INFO). ---
-dictConfig({
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {"std": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "std"}},
-    "root": {"handlers": ["console"], "level": "INFO"},
-})
+dictConfig(
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {"std": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
+        "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "std"}},
+        "root": {"handlers": ["console"], "level": "INFO"},
+    }
+)
 log = logging.getLogger("app")
 
 
@@ -41,7 +43,8 @@ def _guard_cf_access() -> None:
         if not wartosc
     ]
     raise RuntimeError(
-        "CF_ACCESS_ENABLED=true, ale brakuje: " + ", ".join(brakuje)
+        "CF_ACCESS_ENABLED=true, ale brakuje: "
+        + ", ".join(brakuje)
         + ". Domenę zespołu i tag AUD aplikacji znajdziesz w Cloudflare Zero Trust → Access."
     )
 
@@ -59,13 +62,18 @@ def _guard_production() -> None:
         # To jest domyślny adres przenośnego Postgresa z pracy lokalnej (run-local.ps1).
         # Na produkcji oznacza, że DATABASE_URL w ogóle nie zostało podane.
         bad.append("DATABASE_URL wskazuje lokalną bazę deweloperską (port 55432)")
-    if (settings.session_secret in ("", "dev-secret-change-me", "dev-secret")
-            or "wygeneruj" in settings.session_secret or len(settings.session_secret) < 32):
-        bad.append("SESSION_SECRET ma wartość domyślną albo jest krótszy niż 32 znaki "
-                   "(wygeneruj losowy 64-znakowy ciąg)")
+    if (
+        settings.session_secret in ("", "dev-secret-change-me", "dev-secret")
+        or "wygeneruj" in settings.session_secret
+        or len(settings.session_secret) < 32
+    ):
+        bad.append(
+            "SESSION_SECRET ma wartość domyślną albo jest krótszy niż 32 znaki (wygeneruj losowy 64-znakowy ciąg)"
+        )
     if bad:
         raise RuntimeError(
-            "Niebezpieczna konfiguracja produkcyjna: " + "; ".join(bad)
+            "Niebezpieczna konfiguracja produkcyjna: "
+            + "; ".join(bad)
             + ". Ustaw realne wartości w deploy/.env przed uruchomieniem."
         )
 
@@ -156,8 +164,11 @@ async def _limit_rozmiaru_i_csrf(request: Request, call_next):
         # Dozwolony host: nagłówek Host albo X-Forwarded-Host od proxy (Caddy, proxy Vite w dev,
         # które podmienia Host na adres backendu). Przeglądarka z obcej strony nie ustawi
         # X-Forwarded-Host bez preflightu CORS, a API nie ma CORS - więc nie da się tego podrobić.
-        dozwolone = {h.strip().lower() for h in (request.headers.get("host", ""),
-                                                 request.headers.get("x-forwarded-host", "")) if h.strip()}
+        dozwolone = {
+            h.strip().lower()
+            for h in (request.headers.get("host", ""), request.headers.get("x-forwarded-host", ""))
+            if h.strip()
+        }
         if origin and origin != "null":
             if urlsplit(origin).netloc.lower() not in dozwolone:
                 return JSONResponse(status_code=403, content={"detail": "Żądanie z innej strony (CSRF)"})

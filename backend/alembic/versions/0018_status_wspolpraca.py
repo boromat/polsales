@@ -18,9 +18,17 @@ down_revision = "0017_email_uzytkownika"
 branch_labels = None
 depends_on = None
 
-_STARE = ("odebrany", "sklasyfikowany", "sparsowany", "zamowienie_utworzone",
-          "odrzucony_automatycznie", "blad_parsowania", "odpowiedz_w_watku", "duplikat",
-          "obsluzony_recznie")
+_STARE = (
+    "odebrany",
+    "sklasyfikowany",
+    "sparsowany",
+    "zamowienie_utworzone",
+    "odrzucony_automatycznie",
+    "blad_parsowania",
+    "odpowiedz_w_watku",
+    "duplikat",
+    "obsluzony_recznie",
+)
 _NOWE = (*_STARE, "wspolpraca")
 
 

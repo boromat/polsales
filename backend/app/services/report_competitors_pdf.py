@@ -111,14 +111,20 @@ def _ramka_widocznosci(g: dict, S: dict):
         prawa.append(Paragraph(f'<font color="#DC2626">■</font>&nbsp; {esc(w)}', S["small"]))
 
     t = Table([[lewa, prawa]], colWidths=[CONTENT_W / 2, CONTENT_W / 2])
-    t.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("BACKGROUND", (0, 0), (-1, -1), BG2),
-        ("BOX", (0, 0), (-1, -1), 0.5, LINE),
-        ("LINEAFTER", (0, 0), (0, 0), 0.4, LINE),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 7), ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-    ]))
+    t.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BACKGROUND", (0, 0), (-1, -1), BG2),
+                ("BOX", (0, 0), (-1, -1), 0.5, LINE),
+                ("LINEAFTER", (0, 0), (0, 0), 0.4, LINE),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ]
+        )
+    )
     return t
 
 
@@ -132,17 +138,21 @@ def _tabela_profili(g: dict, S: dict):
             kolor = OK if przyrost > 0 else (DANGER if przyrost < 0 else MUTED)
             znak = "+" if przyrost > 0 else ""
             kom = _p(f"{znak}{_num_pl(przyrost)}%", 9, kolor, bold=True, align=2)
-        rows.append([
-            p["name"],
-            ("@" + p["ig_username"]) if p["ig_username"] else "-",
-            int_num(p["followers"]) if p["followers"] is not None else "-",
-            kom,
-            int_num(p["postow_zebranych"]),
-        ])
+        rows.append(
+            [
+                p["name"],
+                ("@" + p["ig_username"]) if p["ig_username"] else "-",
+                int_num(p["followers"]) if p["followers"] is not None else "-",
+                kom,
+                int_num(p["postow_zebranych"]),
+            ]
+        )
     return _data_table(
         ["Konkurent", "Instagram", "Obserwujący", "Zmiana 30 dni", "Zebranych postów"],
-        rows, [0, 0, 1, 1, 1],
-        col_w=[52 * mm, 34 * mm, 26 * mm, 30 * mm, 28 * mm], S=S,
+        rows,
+        [0, 0, 1, 1, 1],
+        col_w=[52 * mm, 34 * mm, 26 * mm, 30 * mm, 28 * mm],
+        S=S,
     )
 
 
@@ -153,17 +163,24 @@ def _tabela_formatow(g: dict, wlasny: dict, S: dict):
     for f in g["formaty"]:
         kolor = KOLORY_FORMATOW.get(f["media_type"], SUBTLE)
         moj = wlasne_udzialy.get(f["media_type"])
-        rows.append([
-            humanize(f["media_type"]),
-            int_num(f["postow"]),
-            [bar_cell(f["udzial"], 30, 3.2, kolor), Spacer(1, 0.8 * mm),
-             _p(ratio_pct(f["udzial"]), 8, INK, bold=True)],
-            _p(ratio_pct(moj) if moj is not None else "-", 9, MUTED, align=2),
-        ])
+        rows.append(
+            [
+                humanize(f["media_type"]),
+                int_num(f["postow"]),
+                [
+                    bar_cell(f["udzial"], 30, 3.2, kolor),
+                    Spacer(1, 0.8 * mm),
+                    _p(ratio_pct(f["udzial"]), 8, INK, bold=True),
+                ],
+                _p(ratio_pct(moj) if moj is not None else "-", 9, MUTED, align=2),
+            ]
+        )
     return _data_table(
         ["Format", "Postów", "Udział w grupie", "U Ciebie"],
-        rows, [0, 1, 0, 1],
-        col_w=[40 * mm, 24 * mm, 56 * mm, 50 * mm], S=S,
+        rows,
+        [0, 1, 0, 1],
+        col_w=[40 * mm, 24 * mm, 56 * mm, 50 * mm],
+        S=S,
     )
 
 
@@ -179,17 +196,21 @@ def _tabela_top(g: dict, S: dict):
         opis = (p["caption"] or "").replace("\n", " ").strip()
         if len(opis) > 110:
             opis = opis[:110].rstrip() + "…"
-        rows.append([
-            p["profil"],
-            humanize(p["media_type"]),
-            data,
-            int_num(p["engagement"]),
-            Paragraph(esc(opis) or "-", S["small"]),
-        ])
+        rows.append(
+            [
+                p["profil"],
+                humanize(p["media_type"]),
+                data,
+                int_num(p["engagement"]),
+                Paragraph(esc(opis) or "-", S["small"]),
+            ]
+        )
     return _data_table(
         ["Profil", "Format", "Data", "Lajki + kom.", "Początek opisu"],
-        rows, [0, 0, 0, 1, 0],
-        col_w=[34 * mm, 22 * mm, 22 * mm, 24 * mm, 68 * mm], S=S,
+        rows,
+        [0, 0, 0, 1, 0],
+        col_w=[34 * mm, 22 * mm, 22 * mm, 24 * mm, 68 * mm],
+        S=S,
     )
 
 
@@ -234,16 +255,23 @@ def build_competitors_pdf(db: DBSession, date_from: date, date_to: date) -> byte
         ),
     ]
     ramka = Table([["", nota]], colWidths=[3 * mm, CONTENT_W - 3 * mm])
-    ramka.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (0, 0), PRIMARY),
-        ("BACKGROUND", (1, 0), (1, 0), TINT),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (1, 0), (1, 0), 8), ("RIGHTPADDING", (1, 0), (1, 0), 8),
-        ("TOPPADDING", (1, 0), (1, 0), 7), ("BOTTOMPADDING", (1, 0), (1, 0), 7),
-        ("LEFTPADDING", (0, 0), (0, 0), 0), ("RIGHTPADDING", (0, 0), (0, 0), 0),
-        ("ROUNDEDCORNERS", [3, 3, 3, 3]),
-        ("BOX", (0, 0), (-1, -1), 0.5, LINE),
-    ]))
+    ramka.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, 0), PRIMARY),
+                ("BACKGROUND", (1, 0), (1, 0), TINT),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (1, 0), (1, 0), 8),
+                ("RIGHTPADDING", (1, 0), (1, 0), 8),
+                ("TOPPADDING", (1, 0), (1, 0), 7),
+                ("BOTTOMPADDING", (1, 0), (1, 0), 7),
+                ("LEFTPADDING", (0, 0), (0, 0), 0),
+                ("RIGHTPADDING", (0, 0), (0, 0), 0),
+                ("ROUNDEDCORNERS", [3, 3, 3, 3]),
+                ("BOX", (0, 0), (-1, -1), 0.5, LINE),
+            ]
+        )
+    )
     story += [ramka, Spacer(1, 7 * mm)]
 
     # Numeracja liczona w locie - grupa bez konkurentów nadal dostaje sekcję (z komunikatem),
@@ -259,9 +287,12 @@ def build_competitors_pdf(db: DBSession, date_from: date, date_to: date) -> byte
         blok = _naglowek_grupy(g, S)
 
         if not g["profili"]:
-            blok.append(Paragraph(
-                "Dodaj konkurentów do tej grupy w panelu (zakładka „Konkurencja”), "
-                "żeby pojawiły się tu dane.", S["small"]))
+            blok.append(
+                Paragraph(
+                    "Dodaj konkurentów do tej grupy w panelu (zakładka „Konkurencja”), żeby pojawiły się tu dane.",
+                    S["small"],
+                )
+            )
             story += [KeepTogether(blok), Spacer(1, 7 * mm)]
             continue
 
@@ -285,15 +316,18 @@ def build_competitors_pdf(db: DBSession, date_from: date, date_to: date) -> byte
                         f'<font color="#EA580C">■</font>&nbsp; Średnia zaangażowania '
                         f"({_num_pl(sr)}) jest znacznie wyższa od mediany ({_num_pl(med)}) - "
                         "grupę ciągnie kilka wyjątkowych postów, a nie stały poziom.",
-                        S["small"]),
+                        S["small"],
+                    ),
                 ]
             story += [
                 Spacer(1, 5 * mm),
-                KeepTogether([
-                    _p("Rozkład formatów - grupa kontra Twój profil", 9, INK, bold=True),
-                    Spacer(1, 2.5 * mm),
-                    _tabela_formatow(g, dane["wlasny"], S),
-                ]),
+                KeepTogether(
+                    [
+                        _p("Rozkład formatów - grupa kontra Twój profil", 9, INK, bold=True),
+                        Spacer(1, 2.5 * mm),
+                        _tabela_formatow(g, dane["wlasny"], S),
+                    ]
+                ),
                 Spacer(1, 5 * mm),
                 KeepTogether(blok_top),
             ]
@@ -305,26 +339,39 @@ def build_competitors_pdf(db: DBSession, date_from: date, date_to: date) -> byte
     w = dane["wlasny"]
     story += [Spacer(1, 8 * mm), SectionHeader(nr(), "Twój profil w tym samym okresie")]
     if not w["postow"]:
-        story.append(Paragraph(
-            "Brak danych o własnych postach organicznych w tym okresie "
-            "(uzupełniane z Instagrama i Facebooka po podłączeniu integracji Meta).", S["small"]))
+        story.append(
+            Paragraph(
+                "Brak danych o własnych postach organicznych w tym okresie "
+                "(uzupełniane z Instagrama i Facebooka po podłączeniu integracji Meta).",
+                S["small"],
+            )
+        )
     else:
-        rows = [[
-            humanize(f["media_type"]),
-            int_num(f["postow"]),
-            [bar_cell(f["udzial"], 30, 3.2, KOLORY_FORMATOW.get(f["media_type"], SUBTLE)),
-             Spacer(1, 0.8 * mm), _p(ratio_pct(f["udzial"]), 8, INK, bold=True)],
-        ] for f in w["formaty"]]
+        rows = [
+            [
+                humanize(f["media_type"]),
+                int_num(f["postow"]),
+                [
+                    bar_cell(f["udzial"], 30, 3.2, KOLORY_FORMATOW.get(f["media_type"], SUBTLE)),
+                    Spacer(1, 0.8 * mm),
+                    _p(ratio_pct(f["udzial"]), 8, INK, bold=True),
+                ],
+            ]
+            for f in w["formaty"]
+        ]
         story += [
             Paragraph(
-                f'{int_num(w["postow"])} postów · {_num_pl(w["postow_na_tydzien"])} posta/tydzień'
-                + (f' · {int_num(w["views_wlasne"])} wyświetleń'
-                   ' <font color="#A1A1AA">(tej metryki nie widać u konkurencji)</font>'
-                   if w["views_wlasne"] else ""),
-                S["small"]),
+                f"{int_num(w['postow'])} postów · {_num_pl(w['postow_na_tydzien'])} posta/tydzień"
+                + (
+                    f" · {int_num(w['views_wlasne'])} wyświetleń"
+                    ' <font color="#A1A1AA">(tej metryki nie widać u konkurencji)</font>'
+                    if w["views_wlasne"]
+                    else ""
+                ),
+                S["small"],
+            ),
             Spacer(1, 3 * mm),
-            _data_table(["Format", "Postów", "Udział"], rows, [0, 1, 0],
-                        col_w=[40 * mm, 30 * mm, 100 * mm], S=S),
+            _data_table(["Format", "Postów", "Udział"], rows, [0, 1, 0], col_w=[40 * mm, 30 * mm, 100 * mm], S=S),
         ]
 
     def _footer(canvas: Canvas, doc):
@@ -348,8 +395,15 @@ def build_competitors_pdf(db: DBSession, date_from: date, date_to: date) -> byte
         _footer(canvas, doc)
 
     buf = io.BytesIO()
-    doc = BaseDocTemplate(buf, pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm,
-                          topMargin=20 * mm, bottomMargin=18 * mm, title="Raport: konkurencja")
+    doc = BaseDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=20 * mm,
+        rightMargin=20 * mm,
+        topMargin=20 * mm,
+        bottomMargin=18 * mm,
+        title="Raport: konkurencja",
+    )
     frame = Frame(20 * mm, 18 * mm, CONTENT_W, A4[1] - 22 * mm - 18 * mm, id="main")
     doc.addPageTemplates([PageTemplate(id="main", frames=[frame], onPage=_running)])
     doc.build(story, canvasmaker=NumberedCanvas)
