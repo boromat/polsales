@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- The frontend image is built on Node 26 LTS (from 24), and CI runs the frontend's tests,
+  typecheck and build on Node 26 as well.
+
 ## [1.1.0] - 2026-11-13
 
 ### Added
