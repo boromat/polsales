@@ -7,8 +7,9 @@ personal data masked by polanon first.
 
 ## Setup
 
-PostgreSQL 16, Python 3.10 or newer, Node.js 22.12 or newer (CI and Docker use 26 LTS). The
-README's *Getting started* has every step, Docker Compose included; in short:
+PostgreSQL 16, Python 3.10 or newer (Docker uses 3.14, CI tests 3.12, 3.13 and 3.14), Node.js
+22.12 or newer (CI and Docker use 26 LTS). The README's *Getting started* has every step, Docker
+Compose included; in short:
 
 ```bash
 cd backend
