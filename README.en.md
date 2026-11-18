@@ -132,7 +132,7 @@ and the app refuses to start with default secrets.
 
 ### Local
 
-Requirements: Python 3.10+, Node 22.12+ (CI and Docker: Node 24 LTS), PostgreSQL 16.
+Requirements: Python 3.10+, Node 22.12+ (CI and Docker: Node 26 LTS), PostgreSQL 16.
 
 ```bash
 cd backend
