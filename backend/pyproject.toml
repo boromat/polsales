@@ -41,7 +41,9 @@ google = [
 ]
 dev = [
     "pytest>=8.3",
+    "pytest-cov>=7.0",
     "ruff>=0.8",
+    "mypy>=2.4",
     # Test układu raportu PDF (bez niego test_report_pdf_uklad jest pomijany).
     "pymupdf>=1.24",
 ]
@@ -56,6 +58,26 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+# Zapora, nie cel: testy pokrywają więcej, a próg nie pozwala temu spaść (pytest --cov).
+fail_under = 68
+show_missing = true
+skip_covered = true
+
+[tool.mypy]
+# Kod aplikacji (bez testów, narzędzi i ewaluacji); ciała funkcji bez adnotacji też są sprawdzane.
+files = ["app"]
+python_version = "3.10"
+check_untyped_defs = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+# apscheduler, reportlab i opcjonalne pakiety Google nie mają tu stubów; ich API to Any.
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 120

@@ -13,7 +13,7 @@ Docker Compose included; in short:
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"                               # pytest, ruff and polanon
+pip install -e ".[dev]"                               # pytest, ruff, mypy and polanon
 export DATABASE_URL=postgresql+psycopg://postgres@127.0.0.1:5432/polsales
 alembic upgrade head
 python -m app.scripts.seed_demo                       # a fictional sports shop
@@ -28,10 +28,12 @@ without an API key, `python tools/mock_llm.py --port 8765` and `AI_BASE_URL=http
 
 ## Quality bar
 
-- Backend: `ruff check . ../tools ../evals` and `pytest -q -W error` pass in `backend/`, with
-  warnings treated as errors. Frontend: `npm test` and `npm run build`, which type-checks the app
-  and its config first. CI runs both on Linux and Windows, with the migrations applied to an empty
-  PostgreSQL.
+- Backend, in `backend/`: `ruff check . ../tools ../evals`, `ruff format --check . ../tools ../evals`,
+  `mypy` and `pytest -q -W error --cov` pass, with warnings treated as errors. Frontend: `npm test`,
+  `npm run typecheck` and `npm run build`. CI runs both on Linux and Windows, with the migrations
+  applied to an empty PostgreSQL.
+- Coverage stays at or above the floor in `backend/pyproject.toml` (68%, a little under where the
+  suite is). The floor is there to stop it sliding back: raise it when the suite has grown past it.
 - A change to the schema comes with an Alembic migration in `backend/alembic/versions/`, and
   `alembic upgrade head` runs on an empty database.
 - Tests for every behaviour change, and no network or paid API in them: the model is replaced with
