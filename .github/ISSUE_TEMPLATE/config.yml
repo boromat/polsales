@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A way into the panel, past the read-only role or to the model with personal data
+    url: https://github.com/boromat/polsales/security/advisories/new
+    about: Report privately. A public issue would publish the way in along with the bug.
+  - name: A personal value was not masked before an AI call
+    url: https://github.com/boromat/polanon/issues
+    about: >-
+      Detection belongs to polanon, the library that does the masking. Report it there, with
+      invented data only.

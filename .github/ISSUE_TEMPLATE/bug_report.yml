@@ -1,0 +1,43 @@
+name: Bug
+description: PolSales does something it should not.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste real customer data, e-mails, a database dump, logs containing them or your
+        `.env` here.** This issue is public. If someone can get into the panel without logging in,
+        the assistant can write or read past its read-only role, or personal data reached the
+        model while masking was on, report it privately from the Security tab instead.
+
+        A personal value that masking did not recognise belongs to the library that does the
+        masking: report it at [polanon](https://github.com/boromat/polanon/issues).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce it
+      description: >-
+        With invented data only: the demo shop from `python -m app.scripts.seed_demo`, addresses
+        at example.com.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version and how you run it
+      description: The version from CHANGELOG.md or the commit, and how the panel is started.
+      placeholder: 1.1.0, Docker Compose with BACKEND_EXTRAS=google / deploy\run-local.ps1
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model and masking
+      description: If the problem is in the assistant or the e-mail parser.
+      placeholder: claude-haiku-4-5 through OpenRouter, masking on, NER off
