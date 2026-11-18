@@ -222,7 +222,7 @@ def _sync_meta_ads(db: DBSession) -> int:
 
     df, dt = _window()
     url = f"https://graph.facebook.com/v21.0/act_{settings.meta_ad_account_id}/insights"
-    params = {
+    params: dict[str, str | int] = {
         "level": "ad",
         "time_range": f'{{"since":"{df.isoformat()}","until":"{dt.isoformat()}"}}',
         "time_increment": 1,

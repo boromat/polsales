@@ -10,9 +10,10 @@ Dwie reguły, które decydują o wiarygodności tych liczb:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 
-from sqlalchemy import text
+from sqlalchemy import RowMapping, text
 from sqlalchemy.orm import Session as DBSession
 
 # Kolejność ma znaczenie - w tej kolejności grupy pojawiają się w panelu i w raporcie.
@@ -90,7 +91,7 @@ def profile_grupy(db: DBSession, grupa: str) -> list[dict]:
     ]
 
 
-def _posty_grupy(db: DBSession, grupa: str, df: date, dt: date) -> list[dict]:
+def _posty_grupy(db: DBSession, grupa: str, df: date, dt: date) -> Sequence[RowMapping]:
     return (
         db.execute(
             text(

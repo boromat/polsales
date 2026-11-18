@@ -110,8 +110,8 @@ def poll_and_ingest(db: DBSession) -> dict:
                     )
                 # Kursor przesuwamy TAKZE po bledzie - inaczej ten sam mail blokowalby kolejke.
                 try:
-                    max_uid = max(max_uid, int(msg.uid))
-                except (TypeError, ValueError):
+                    max_uid = max(max_uid, int(msg.uid or ""))
+                except ValueError:
                     pass
             state.last_seen_uid = max_uid
             state.updated_at = datetime.now(timezone.utc)

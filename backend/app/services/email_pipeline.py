@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from app.ai.privacy import MaskingUnavailable
 from app.db.models.core import Company, Contact
+from app.db.models.drafts import OrderDraft
 from app.db.models.mail import Email
 from app.services import email_classifier, email_parser_ai, email_parser_rules
 from app.services.drafts import create_draft
@@ -41,7 +42,7 @@ def _known_sender(db: DBSession, from_addr: str | None) -> bool:
     return bool(db.scalar(select(Company.id).where(Company.email_domain == domain).limit(1)))
 
 
-def ingest_email(db: DBSession, data: dict, powiadomienia: list[dict]) -> tuple[Email | None, object | None]:
+def ingest_email(db: DBSession, data: dict, powiadomienia: list[dict]) -> tuple[Email | None, OrderDraft | None]:
     """Przyjmuje jeden mail (dict), wstawia idempotentnie, klasyfikuje, parsuje, tworzy szkic.
 
     data: {uidvalidity?, uid?, message_id?, from_addr, from_name?, subject?, date_received?,
@@ -100,7 +101,7 @@ def wyslij_powiadomienia(powiadomienia: list[dict]) -> None:
     powiadomienia.clear()
 
 
-def process_email_record(db: DBSession, email: Email, powiadomienia: list[dict]) -> object | None:
+def process_email_record(db: DBSession, email: Email, powiadomienia: list[dict]) -> OrderDraft | None:
     """Klasyfikuje i parsuje istniejący rekord maila. Używane też do ponownego przetwarzania."""
     cls = email_classifier.classify(
         from_addr=email.from_addr,

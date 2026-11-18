@@ -78,9 +78,10 @@ def poll_commands() -> None:
                 # i zapis statusu sam by rzucil PendingRollbackError. Polecenie zostawaloby
                 # wtedy 'pending' i wracalo w petli co 10 s - w kolko, bez konca.
                 db.rollback()
-                cmd = db.get(SyncCommand, cmd_id)
-                if cmd is None:  # skasowane w miedzyczasie
+                reloaded = db.get(SyncCommand, cmd_id)
+                if reloaded is None:  # skasowane w miedzyczasie
                     continue
+                cmd = reloaded
                 bledne = True
                 result = {"error": str(exc)[:300]}
             if bledne:
