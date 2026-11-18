@@ -1,0 +1,93 @@
+name: Release
+
+# Pushing a tag such as v1.1.1 creates a GitHub release whose notes are that version's section of
+# CHANGELOG.md. PolSales is deployed from the repository (deploy/docker-compose.yml builds the
+# images itself), so nothing else is published.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Tag, versions and changelog agree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      # The version is written in four places, which a release commit changes together: the backend
+      # package, the number the API reports (FastAPI in app/main.py), the frontend package and its
+      # lock file. A tag that disagrees with any of them, or a release without its dated changelog
+      # entry, stops here.
+      - name: Compare
+        run: |
+          python - "${GITHUB_REF_NAME#v}" <<'PY'
+          import json
+          import re
+          import sys
+          import tomllib
+
+          tag = sys.argv[1]
+          with open("backend/pyproject.toml", "rb") as f:
+              found = {"backend/pyproject.toml": tomllib.load(f)["project"]["version"]}
+          main = open("backend/app/main.py", encoding="utf-8").read()
+          api = re.search(r'FastAPI\([^)]*version="([^"]+)"', main)
+          found["backend/app/main.py"] = api.group(1) if api else "(none)"
+          found["frontend/package.json"] = json.load(open("frontend/package.json", encoding="utf-8"))["version"]
+          lock = json.load(open("frontend/package-lock.json", encoding="utf-8"))
+          found["frontend/package-lock.json"] = lock["packages"][""]["version"]
+          wrong = {path: version for path, version in found.items() if version != tag}
+          if wrong:
+              sys.exit(f"tag v{tag} does not match: {wrong}")
+          changelog = open("CHANGELOG.md", encoding="utf-8").read()
+          if not re.search(rf"^## \[{re.escape(tag)}\]", changelog, re.MULTILINE):
+              sys.exit(f"CHANGELOG.md has no '## [{tag}]' section")
+          dated = rf"^## \[{re.escape(tag)}\] - \d{{4}}-\d{{2}}-\d{{2}}\s*$"
+          if not re.search(dated, changelog, re.MULTILINE):
+              sys.exit(f"CHANGELOG.md has no release date for {tag}: write '## [{tag}] - YYYY-MM-DD'")
+          PY
+
+  github:
+    name: GitHub release
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The whole history with its tags, to find the previous release for the comparison link.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # The version's section of CHANGELOG.md without its heading, then a link to the changes since
+      # the previous release.
+      - name: Notes from the changelog
+        run: |
+          python - "${GITHUB_REF_NAME#v}" > notes.md <<'PY'
+          import re
+          import sys
+
+          tag = sys.argv[1]
+          changelog = open("CHANGELOG.md", encoding="utf-8").read()
+          section = re.search(
+              rf"^## \[{re.escape(tag)}\][^\n]*\n(.*?)(?=^## \[|\Z)", changelog, re.MULTILINE | re.DOTALL
+          )
+          print(section.group(1).strip())
+          PY
+          previous=$(git describe --tags --abbrev=0 --match 'v*' "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          if [ -n "$previous" ]; then
+            printf '\n**Full changelog**: %s/%s/compare/%s...%s\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$previous" "$GITHUB_REF_NAME" >> notes.md
+          fi
+
+      # Titled like the releases so far: "PolSales 1.1.0".
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "PolSales ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag
