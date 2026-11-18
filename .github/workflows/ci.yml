@@ -73,14 +73,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Ruff lint (backend, tools and evals)
-        run: ruff check . ../tools ../evals
+      - name: Ruff lint and format (backend, tools and evals)
+        run: ruff check --output-format=github . ../tools ../evals && ruff format --check . ../tools ../evals
+
+      - name: Type-check (mypy, settings in pyproject.toml)
+        run: mypy
 
       - name: Apply migrations
         run: alembic upgrade head
 
-      - name: Run tests (warnings are errors)
-        run: pytest -q -W error
+      # The coverage floor is fail_under in pyproject.toml: below it this step fails.
+      - name: Run tests with coverage (warnings are errors)
+        run: pytest -q -W error --cov --cov-report=term-missing
 
   frontend:
     name: Frontend (${{ matrix.os }})
@@ -109,5 +113,10 @@ jobs:
       - name: Tests (vitest)
         run: npm test
 
-      - name: Typecheck and build
-        run: npm run build
+      # The app and the Vite config (tsconfig.node.json), on their own so a type error is named.
+      - name: Typecheck
+        run: npm run typecheck
+
+      # npm run build is the typecheck above and then this.
+      - name: Build
+        run: npx vite build

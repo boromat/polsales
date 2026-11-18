@@ -196,7 +196,8 @@ Stan konfiguracji (bez wartości sekretów) jest widoczny w zakładce **Ustawien
 ## Testy i jakość
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 310 testów, ostrzeżenia traktowane jak błędy
+cd backend && ruff check . ../tools ../evals && ruff format --check . ../tools ../evals
+cd backend && mypy && pytest -q -W error --cov     # typy; 310 testów, ostrzeżenia jak błędy, pokrycie min. 68%
 cd frontend && npm test && npm run build           # 17 testów, typecheck (aplikacja i konfiguracja), build
 ```
 
@@ -224,8 +225,8 @@ zgodność liczby z SQL, odmowa w pułapkach, nieznane tokeny polanon w odpowied
 CI uruchamia ją wyłącznie na atrapie modelu (`tests/test_evals.py`). Przebiegu na prawdziwym
 modelu jeszcze nie było; szacunek kosztu i ograniczenia są w `evals/README.md`.
 
-CI (GitHub Actions) na Linux i Windows: ruff (także reguły bezpieczeństwa), migracje na czystej bazie PostgreSQL, testy backendu
-(z polanon), testy i build frontendu.
+CI (GitHub Actions) na Linux i Windows: ruff (także reguły bezpieczeństwa) i format, mypy, migracje na czystej bazie PostgreSQL,
+testy backendu (z polanon) z progiem pokrycia, testy, typy i build frontendu.
 
 ## Struktura
 

@@ -198,7 +198,8 @@ The configuration status (without secret values) is shown on the **Settings** pa
 ## Tests and quality
 
 ```bash
-cd backend && ruff check . && pytest -q -W error   # 310 tests, warnings are errors
+cd backend && ruff check . ../tools ../evals && ruff format --check . ../tools ../evals
+cd backend && mypy && pytest -q -W error --cov     # types; 310 tests, warnings are errors, coverage at least 68%
 cd frontend && npm test && npm run build           # 17 tests, typecheck (app and config), build
 ```
 
@@ -227,8 +228,8 @@ the traps, unknown polanon tokens in the answer, cost and time. CI runs it on th
 (`tests/test_evals.py`). There has been no run on a real model yet; the cost estimate and the
 limitations are in `evals/README.md`.
 
-CI (GitHub Actions) on Linux and Windows: ruff (incl. security rules), migrations on a clean PostgreSQL, backend tests
-(with polanon), frontend tests and build.
+CI (GitHub Actions) on Linux and Windows: ruff (incl. security rules) and formatting, mypy, migrations on a clean PostgreSQL,
+backend tests (with polanon) with a coverage floor, frontend tests, typecheck and build.
 
 ## Project layout
 
