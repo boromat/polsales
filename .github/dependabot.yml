@@ -17,3 +17,9 @@ updates:
     directories: ["/backend", "/frontend"]
     schedule:
       interval: monthly
+    ignore:
+      # google-ads, which the google extra installs for Google Ads, requires Python <3.15 in every
+      # release up to 35.1.0 (November 2026), so an image on 3.15 cannot be built with that extra.
+      # Remove this once google-ads supports Python 3.15.
+      - dependency-name: "python"
+        versions: [">= 3.15"]
