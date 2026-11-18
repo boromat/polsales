@@ -4,6 +4,7 @@ Revision ID: 0003_integracje
 Revises: 0002_pipeline_maili
 Create Date: 2026-07-19
 """
+
 from __future__ import annotations
 
 from alembic import op

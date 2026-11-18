@@ -40,7 +40,7 @@ def unwrap(tag: str, text: str) -> str | None:
     """Treść spomiędzy znaczników z :func:`wrap`; None, gdy tekst nie jest tak opakowany."""
     head, tail = f"<{tag}>\n", f"\n</{tag}>"
     if isinstance(text, str) and text.startswith(head) and text.endswith(tail):
-        return text[len(head):-len(tail)]
+        return text[len(head) : -len(tail)]
     return None
 
 

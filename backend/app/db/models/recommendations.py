@@ -17,9 +17,7 @@ class Recommendation(Base):
     __table_args__ = {"schema": "core"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     period_from: Mapped[date | None] = mapped_column(Date)
     period_to: Mapped[date | None] = mapped_column(Date)
     category: Mapped[str] = mapped_column(Text, nullable=False)

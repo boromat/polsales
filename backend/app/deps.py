@@ -92,9 +92,7 @@ def get_current_user(
         # Token był, ale nie przeszedł weryfikacji. Nie schodzimy po cichu do cookie -
         # to zamaskowałoby błędną konfigurację AUD albo domeny zespołu na tyle skutecznie,
         # że nikt by jej nie zauważył aż do dnia, w którym wygaśnie ostatnie cookie.
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Nieprawidłowy token Cloudflare Access"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nieprawidłowy token Cloudflare Access")
 
     if settings.cf_access_ready and settings.cf_access_only:
         # Tryb "tylko Access": żądanie bez tokenu Access ominęło Cloudflare (np. bezpośrednio

@@ -34,7 +34,7 @@ def _text_of(message: dict) -> str:
 def _tool_payload(raw):
     """The panel sends every tool result between <wynik_narzedzia> tags (data, not instructions)."""
     if isinstance(raw, str) and raw.startswith(TOOL_OPEN) and raw.endswith(TOOL_CLOSE):
-        return raw[len(TOOL_OPEN):-len(TOOL_CLOSE)]
+        return raw[len(TOOL_OPEN) : -len(TOOL_CLOSE)]
     return raw
 
 
@@ -88,12 +88,23 @@ def decide(body: dict) -> list[dict]:
     tools = {t.get("name") for t in body.get("tools") or []}
     nip = NIP_RE.search(question)
     if nip and "get_company_profile" in tools:
-        return [{"type": "tool_use", "id": "toolu_mock_1", "name": "get_company_profile",
-                 "input": {"nip": nip.group(0), "company_id": None, "include_order_history": False}}]
+        return [
+            {
+                "type": "tool_use",
+                "id": "toolu_mock_1",
+                "name": "get_company_profile",
+                "input": {"nip": nip.group(0), "company_id": None, "include_order_history": False},
+            }
+        ]
     if body.get("output_config") or "JSON" in str(body.get("system", "")):
         return [{"type": "text", "text": "{}"}]
-    return [{"type": "text", "text": "To lokalna atrapa modelu. Zapytaj o firmę po NIP, np. "
-                                     "„Jak idzie współpraca z firmą o NIP 123-456-32-18?”"}]
+    return [
+        {
+            "type": "text",
+            "text": "To lokalna atrapa modelu. Zapytaj o firmę po NIP, np. "
+            "„Jak idzie współpraca z firmą o NIP 123-456-32-18?”",
+        }
+    ]
 
 
 def _sse(event: str, data: dict) -> bytes:
@@ -114,8 +125,16 @@ class Handler(BaseHTTPRequestHandler):
         usage = {"input_tokens": 120, "output_tokens": 60}
 
         if not body.get("stream"):
-            payload = {"id": "msg_mock", "type": "message", "role": "assistant", "model": "mock",
-                       "content": blocks, "stop_reason": stop, "stop_sequence": None, "usage": usage}
+            payload = {
+                "id": "msg_mock",
+                "type": "message",
+                "role": "assistant",
+                "model": "mock",
+                "content": blocks,
+                "stop_reason": stop,
+                "stop_sequence": None,
+                "usage": usage,
+            }
             data = json.dumps(payload, ensure_ascii=False).encode()
             self.send_response(200)
             self.send_header("content-type", "application/json")
@@ -128,25 +147,84 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("content-type", "text/event-stream")
         self.end_headers()
         w = self.wfile.write
-        w(_sse("message_start", {"type": "message_start", "message": {
-            "id": "msg_mock", "type": "message", "role": "assistant", "model": "mock", "content": [],
-            "stop_reason": None, "stop_sequence": None, "usage": {"input_tokens": 120, "output_tokens": 1}}}))
+        w(
+            _sse(
+                "message_start",
+                {
+                    "type": "message_start",
+                    "message": {
+                        "id": "msg_mock",
+                        "type": "message",
+                        "role": "assistant",
+                        "model": "mock",
+                        "content": [],
+                        "stop_reason": None,
+                        "stop_sequence": None,
+                        "usage": {"input_tokens": 120, "output_tokens": 1},
+                    },
+                },
+            )
+        )
         for i, block in enumerate(blocks):
             if block["type"] == "text":
-                w(_sse("content_block_start", {"type": "content_block_start", "index": i,
-                                               "content_block": {"type": "text", "text": ""}}))
+                w(
+                    _sse(
+                        "content_block_start",
+                        {"type": "content_block_start", "index": i, "content_block": {"type": "text", "text": ""}},
+                    )
+                )
                 text = block["text"]
                 for start in range(0, len(text), 9):  # small chunks: tokens get split across them
-                    w(_sse("content_block_delta", {"type": "content_block_delta", "index": i,
-                                                   "delta": {"type": "text_delta", "text": text[start:start + 9]}}))
+                    w(
+                        _sse(
+                            "content_block_delta",
+                            {
+                                "type": "content_block_delta",
+                                "index": i,
+                                "delta": {"type": "text_delta", "text": text[start : start + 9]},
+                            },
+                        )
+                    )
             else:
-                w(_sse("content_block_start", {"type": "content_block_start", "index": i, "content_block": {
-                    "type": "tool_use", "id": block["id"], "name": block["name"], "input": {}}}))
-                w(_sse("content_block_delta", {"type": "content_block_delta", "index": i, "delta": {
-                    "type": "input_json_delta", "partial_json": json.dumps(block["input"], ensure_ascii=False)}}))
+                w(
+                    _sse(
+                        "content_block_start",
+                        {
+                            "type": "content_block_start",
+                            "index": i,
+                            "content_block": {
+                                "type": "tool_use",
+                                "id": block["id"],
+                                "name": block["name"],
+                                "input": {},
+                            },
+                        },
+                    )
+                )
+                w(
+                    _sse(
+                        "content_block_delta",
+                        {
+                            "type": "content_block_delta",
+                            "index": i,
+                            "delta": {
+                                "type": "input_json_delta",
+                                "partial_json": json.dumps(block["input"], ensure_ascii=False),
+                            },
+                        },
+                    )
+                )
             w(_sse("content_block_stop", {"type": "content_block_stop", "index": i}))
-        w(_sse("message_delta", {"type": "message_delta", "delta": {"stop_reason": stop, "stop_sequence": None},
-                                 "usage": {"output_tokens": 60}}))
+        w(
+            _sse(
+                "message_delta",
+                {
+                    "type": "message_delta",
+                    "delta": {"stop_reason": stop, "stop_sequence": None},
+                    "usage": {"output_tokens": 60},
+                },
+            )
+        )
         w(_sse("message_stop", {"type": "message_stop"}))
 
 

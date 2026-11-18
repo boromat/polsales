@@ -14,9 +14,7 @@ from app.deps import get_current_user
 from app.schemas import CompanyListItem, CompanyProfileOut
 from app.services.nip import is_valid_nip, normalize_nip
 
-router = APIRouter(
-    prefix="/api/companies", tags=["companies"], dependencies=[Depends(get_current_user)]
-)
+router = APIRouter(prefix="/api/companies", tags=["companies"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[CompanyListItem])
@@ -47,29 +45,37 @@ def lookup_by_nip(raw_nip: str, db: DBSession = Depends(get_db)):
     nip = normalize_nip(raw_nip)
     if not nip or not is_valid_nip(nip):
         raise HTTPException(status_code=422, detail="Nieprawidłowy NIP")
-    row = db.execute(
-        text(
-            """SELECT company_id, company_name, nip, ltv_net, orders_count,
+    row = (
+        db.execute(
+            text(
+                """SELECT company_id, company_name, nip, ltv_net, orders_count,
                       frequency_days, last_order, avg_order_value_net, avg_lead_time_days,
                days_since_last_order, at_risk
                FROM analytics.v_company_metrics WHERE nip = :nip"""
-        ),
-        {"nip": nip},
-    ).mappings().first()
+            ),
+            {"nip": nip},
+        )
+        .mappings()
+        .first()
+    )
     return CompanyListItem(**row) if row else None
 
 
 @router.get("/{company_id}", response_model=CompanyProfileOut)
 def company_profile(company_id: int, db: DBSession = Depends(get_db)) -> CompanyProfileOut:
-    row = db.execute(
-        text(
-            """SELECT company_id, company_name, nip, ltv_net, orders_count,
+    row = (
+        db.execute(
+            text(
+                """SELECT company_id, company_name, nip, ltv_net, orders_count,
                       frequency_days, first_order, last_order, avg_order_value_net, avg_lead_time_days,
                       days_since_last_order, at_risk
                FROM analytics.v_company_metrics WHERE company_id = :id"""
-        ),
-        {"id": company_id},
-    ).mappings().first()
+            ),
+            {"id": company_id},
+        )
+        .mappings()
+        .first()
+    )
     if row is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono firmy")
 

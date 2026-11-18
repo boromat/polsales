@@ -53,8 +53,13 @@ def test_series_hour_marketing_metric_raises():
 def test_series_hour_mixed_metrics_raises_on_marketing():
     with pytest.raises(ToolError):
         _metrics_series(
-            None, date(2026, 7, 1), date(2026, 7, 20), "all", "all",
-            ["revenue_net", "clicks"], "hour",
+            None,
+            date(2026, 7, 1),
+            date(2026, 7, 20),
+            "all",
+            "all",
+            ["revenue_net", "clicks"],
+            "hour",
         )
 
 

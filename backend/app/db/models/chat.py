@@ -26,17 +26,11 @@ class Conversation(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[int] = mapped_column(ForeignKey("ops.users.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    messages: Mapped[list[Message]] = relationship(
-        back_populates="conversation", cascade="all, delete-orphan"
-    )
+    messages: Mapped[list[Message]] = relationship(back_populates="conversation", cascade="all, delete-orphan")
 
 
 class Message(Base):
@@ -53,9 +47,7 @@ class Message(Base):
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     cache_read_tokens: Mapped[int | None] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
@@ -72,6 +64,4 @@ class ToolCallLog(Base):
     params: Mapped[dict | None] = mapped_column(JSONB)
     row_count: Mapped[int | None] = mapped_column(Integer)
     ms: Mapped[float | None] = mapped_column(Numeric(10, 2))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

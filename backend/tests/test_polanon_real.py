@@ -20,8 +20,13 @@ TEXT = (
     "Klient Anna Testowa (anna.testowa@orlik.example, tel. 500 000 001) z firmy z NIP 1234563218 "
     "prosi o fakturę na konto PL20 9999 0000 0000 0000 0000 0001."
 )
-REAL_VALUES = ["Anna Testowa", "anna.testowa@orlik.example", "500 000 001", "1234563218",
-               "9999 0000 0000 0000 0000 0001"]
+REAL_VALUES = [
+    "Anna Testowa",
+    "anna.testowa@orlik.example",
+    "500 000 001",
+    "1234563218",
+    "9999 0000 0000 0000 0000 0001",
+]
 
 
 def test_polanon_masks_polish_pii_and_restores_it():
@@ -83,9 +88,19 @@ def test_full_assistant_loop_with_polanon(monkeypatch, conversation, ro_session)
             return super().stream(**kwargs)
 
     client = TokenEchoClient()
-    events = _events(list(assistant.run_stream(
-        db, conv, "Pokaż firmę z NIP 1234563218", None, tool_db=ro_session, client=client,
-        masker_factory=lambda _db: privacy.polanon_masker(terms=["Klub Sportowy Orlik", "1234563218"]))))
+    events = _events(
+        list(
+            assistant.run_stream(
+                db,
+                conv,
+                "Pokaż firmę z NIP 1234563218",
+                None,
+                tool_db=ro_session,
+                client=client,
+                masker_factory=lambda _db: privacy.polanon_masker(terms=["Klub Sportowy Orlik", "1234563218"]),
+            )
+        )
+    )
 
     sent = client.sent_text()
     for value in ("Klub Sportowy Orlik", "1234563218", "anna.testowa@orlik.example"):
@@ -103,18 +118,35 @@ def test_email_parser_with_polanon(monkeypatch):
         tokens = privacy.TOKEN_RE.findall(user)
         nip = next(t for t in tokens if t.startswith("<NIP_"))
         mail = next(t for t in tokens if t.startswith("<EMAIL_"))
-        return {"is_order": True, "confidence": 0.9, "order_type": "zamowienie", "products": [],
-                "customer": {"company_name": None, "contact_person": None, "email": mail, "phone": None,
-                             "nip": nip, "delivery_address": None},
-                "attribution": None, "notes": None, "ambiguities": []}
+        return {
+            "is_order": True,
+            "confidence": 0.9,
+            "order_type": "zamowienie",
+            "products": [],
+            "customer": {
+                "company_name": None,
+                "contact_person": None,
+                "email": mail,
+                "phone": None,
+                "nip": nip,
+                "delivery_address": None,
+            },
+            "attribution": None,
+            "notes": None,
+            "ambiguities": [],
+        }
 
     monkeypatch.setattr(email_parser_ai, "is_available", lambda: True)
     monkeypatch.setattr(email_parser_ai, "build_client", lambda: object())
     monkeypatch.setattr(email_parser_ai, "structured_json", fake_structured)
     data = email_parser_ai.parse_free_text(
-        subject="Zamówienie", from_addr="anna.testowa@orlik.example", from_name="Anna Testowa",
+        subject="Zamówienie",
+        from_addr="anna.testowa@orlik.example",
+        from_name="Anna Testowa",
         body_text="Proszę o 20 piłek. NIP 1234563218. Kontakt: anna.testowa@orlik.example",
-        when="2026-11-09", masker=privacy.polanon_masker())
+        when="2026-11-09",
+        masker=privacy.polanon_masker(),
+    )
     assert "1234563218" not in captured["user"] and "anna.testowa@orlik.example" not in captured["user"]
     assert data["customer"]["nip"] == "1234563218"
     assert data["customer"]["email"] == "anna.testowa@orlik.example"
@@ -139,6 +171,8 @@ def test_prospect_from_a_draft_is_masked_in_a_tool_result():
 
     terms = known_terms(_FakeDB(drafts=[("Demo Klub Biegowy Przykład", "Piotr Przykładowy")]))
     m = privacy.polanon_masker(terms=terms)
-    dumped = json.dumps(m.mask_data({"drafts": [{"company_name": "Demo Klub Biegowy Przykład",
-                                                 "contact_name": "Piotr Przykładowy"}]}), ensure_ascii=False)
+    dumped = json.dumps(
+        m.mask_data({"drafts": [{"company_name": "Demo Klub Biegowy Przykład", "contact_name": "Piotr Przykładowy"}]}),
+        ensure_ascii=False,
+    )
     assert "Biegowy" not in dumped and "Przykładowy" not in dumped

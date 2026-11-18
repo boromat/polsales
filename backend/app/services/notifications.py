@@ -60,7 +60,9 @@ def send_email(subject: str, text_body: str, html_body: str | None = None) -> di
                 srv.send_message(msg)
         else:
             with smtplib.SMTP_SSL(
-                settings.smtp_host, settings.smtp_port, timeout=20,
+                settings.smtp_host,
+                settings.smtp_port,
+                timeout=20,
                 context=ssl.create_default_context(),
             ) as srv:
                 srv.login(settings.smtp_user, settings.smtp_password)
@@ -75,6 +77,7 @@ def send_email(subject: str, text_body: str, html_body: str | None = None) -> di
 
 # --- Szablony domenowe -------------------------------------------------------
 
+
 def _panel_url() -> str:
     """Link do panelu - w produkcji domena z .env, lokalnie adres dev-serwera."""
     if settings.is_dev:
@@ -82,8 +85,9 @@ def _panel_url() -> str:
     return f"https://{settings.app_domain}"
 
 
-def notify_new_draft(*, company_name: str | None, from_addr: str | None,
-                     items_count: int, subject_line: str | None = None) -> dict:
+def notify_new_draft(
+    *, company_name: str | None, from_addr: str | None, items_count: int, subject_line: str | None = None
+) -> dict:
     """Nowy szkic zamówienia z maila czeka na weryfikację."""
     who = company_name or from_addr or "nieznany nadawca"
     subject = f"Nowe zamówienie do weryfikacji - {who}"
@@ -99,8 +103,9 @@ def notify_new_draft(*, company_name: str | None, from_addr: str | None,
     return send_email(subject, "\n".join(lines))
 
 
-def notify_new_partner(*, kind: str | None, company_name: str | None,
-                       contact_person: str | None, from_addr: str | None = None) -> dict:
+def notify_new_partner(
+    *, kind: str | None, company_name: str | None, contact_person: str | None, from_addr: str | None = None
+) -> dict:
     """Nowe zgłoszenie współpracy (klub sportowy / hurtownik) ze strony - to nie zamówienie."""
     who = company_name or contact_person or from_addr or "nieznana firma"
     subject = f"Nowe zgłoszenie współpracy - {who}"

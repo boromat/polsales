@@ -41,9 +41,7 @@ def _known_sender(db: DBSession, from_addr: str | None) -> bool:
     return bool(db.scalar(select(Company.id).where(Company.email_domain == domain).limit(1)))
 
 
-def ingest_email(
-    db: DBSession, data: dict, powiadomienia: list[dict]
-) -> tuple[Email | None, object | None]:
+def ingest_email(db: DBSession, data: dict, powiadomienia: list[dict]) -> tuple[Email | None, object | None]:
     """Przyjmuje jeden mail (dict), wstawia idempotentnie, klasyfikuje, parsuje, tworzy szkic.
 
     data: {uidvalidity?, uid?, message_id?, from_addr, from_name?, subject?, date_received?,
@@ -123,13 +121,15 @@ def process_email_record(db: DBSession, email: Email, powiadomienia: list[dict])
         email.parsed_payload = dane
         email.status = "wspolpraca"
         db.flush()
-        powiadomienia.append({
-            "rodzaj": "wspolpraca",
-            "kind": dane.get("kind"),
-            "company_name": dane.get("company_name"),
-            "contact_person": dane.get("contact_person"),
-            "from_addr": dane.get("email") or email.from_addr,
-        })
+        powiadomienia.append(
+            {
+                "rodzaj": "wspolpraca",
+                "kind": dane.get("kind"),
+                "company_name": dane.get("company_name"),
+                "contact_person": dane.get("contact_person"),
+                "from_addr": dane.get("email") or email.from_addr,
+            }
+        )
         return None
 
     # Twarde odrzucenie z klasyfikatora (newsletter/spam/automat) - nie twórz szkicu.
@@ -164,8 +164,10 @@ def process_email_record(db: DBSession, email: Email, powiadomienia: list[dict])
         # Fail closed: mail nie wyszedł do AI. Trafia do ręcznej weryfikacji z wyjaśnieniem.
         log.warning("Maskowanie niedostępne - mail id=%s nie trafił do AI: %s", email.id, exc)
         parsed = None
-        error_detail = (f"Maskowanie danych osobowych jest włączone, ale nie działa ({exc}). "
-                        "Mail nie został wysłany do AI - zweryfikuj go ręcznie.")
+        error_detail = (
+            f"Maskowanie danych osobowych jest włączone, ale nie działa ({exc}). "
+            "Mail nie został wysłany do AI - zweryfikuj go ręcznie."
+        )
     except Exception as exc:  # noqa: BLE001
         log.exception("Wyjątek parsowania maila id=%s", email.id)
         parsed = None
@@ -181,8 +183,7 @@ def process_email_record(db: DBSession, email: Email, powiadomienia: list[dict])
     if parsed is None:
         email.status = "blad_parsowania"
         email.error_detail = error_detail or (
-            "Nie udało się automatycznie odczytać zamówienia "
-            "(parser regułowy i AI bez wyniku)."
+            "Nie udało się automatycznie odczytać zamówienia (parser regułowy i AI bez wyniku)."
         )
         db.flush()
         return None
@@ -193,10 +194,12 @@ def process_email_record(db: DBSession, email: Email, powiadomienia: list[dict])
     db.flush()
 
     # Powiadomienie tylko KOLEJKUJEMY - wysyłka po commicie wołającego.
-    powiadomienia.append({
-        "company_name": draft.company_name,
-        "from_addr": email.from_addr,
-        "items_count": len(parsed.get("products") or []),
-        "subject_line": email.subject,
-    })
+    powiadomienia.append(
+        {
+            "company_name": draft.company_name,
+            "from_addr": email.from_addr,
+            "items_count": len(parsed.get("products") or []),
+            "subject_line": email.subject,
+        }
+    )
     return draft

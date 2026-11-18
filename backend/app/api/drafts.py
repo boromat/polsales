@@ -159,9 +159,7 @@ def list_drafts(
     )
     result = []
     for draft, email in db.execute(stmt).all():
-        cnt = db.scalar(
-            select(func.count()).select_from(OrderDraftItem).where(OrderDraftItem.draft_id == draft.id)
-        )
+        cnt = db.scalar(select(func.count()).select_from(OrderDraftItem).where(OrderDraftItem.draft_id == draft.id))
         result.append(
             DraftListItem(
                 id=draft.id,
@@ -182,9 +180,7 @@ def list_drafts(
 
 
 def _load_draft(db: DBSession, draft_id: int) -> OrderDraft:
-    draft = db.scalar(
-        select(OrderDraft).where(OrderDraft.id == draft_id).options(selectinload(OrderDraft.items))
-    )
+    draft = db.scalar(select(OrderDraft).where(OrderDraft.id == draft_id).options(selectinload(OrderDraft.items)))
     if draft is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono szkicu")
     return draft
@@ -199,9 +195,7 @@ def get_draft(draft_id: int, db: DBSession = Depends(get_db)) -> DraftDetailOut:
         id=draft.id,
         status=draft.status,
         extraction_method=draft.extraction_method,
-        extraction_confidence=float(draft.extraction_confidence)
-        if draft.extraction_confidence is not None
-        else None,
+        extraction_confidence=float(draft.extraction_confidence) if draft.extraction_confidence is not None else None,
         nip=draft.nip,
         company_name=draft.company_name,
         contact_name=draft.contact_name,

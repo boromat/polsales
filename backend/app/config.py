@@ -95,9 +95,9 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
-    smtp_from: str = ""          # domyślnie smtp_user
-    notify_email_to: str = ""    # domyślnie smtp_user
-    smtp_starttls: bool = True   # 587 = STARTTLS, 465 = SSL bezpośrednie (ustaw false)
+    smtp_from: str = ""  # domyślnie smtp_user
+    notify_email_to: str = ""  # domyślnie smtp_user
+    smtp_starttls: bool = True  # 587 = STARTTLS, 465 = SSL bezpośrednie (ustaw false)
 
     # RODO
     raw_email_retention_days: int = 0

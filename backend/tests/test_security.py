@@ -33,24 +33,26 @@ def _clean_limits():
 
 # -- CSRF ----------------------------------------------------------------------------------------
 
+
 def test_state_changing_request_from_another_origin_is_rejected():
     c = TestClient(app)
-    r = c.post("/api/auth/login", json={"username": "x", "password": "y"},
-               headers={"Origin": "https://evil.example"})
+    r = c.post("/api/auth/login", json={"username": "x", "password": "y"}, headers={"Origin": "https://evil.example"})
     assert r.status_code == 403 and "CSRF" in r.json()["detail"]
 
 
 def test_cross_site_fetch_metadata_is_rejected():
     c = TestClient(app)
-    r = c.post("/api/auth/login", json={"username": "x", "password": "y"},
-               headers={"Sec-Fetch-Site": "cross-site"})
+    r = c.post("/api/auth/login", json={"username": "x", "password": "y"}, headers={"Sec-Fetch-Site": "cross-site"})
     assert r.status_code == 403
 
 
 def test_same_origin_and_non_browser_requests_pass():
     c = TestClient(app)
-    same = c.post("/api/auth/login", json={"username": "x", "password": "y"},
-                  headers={"Origin": "http://testserver", "Sec-Fetch-Site": "same-origin"})
+    same = c.post(
+        "/api/auth/login",
+        json={"username": "x", "password": "y"},
+        headers={"Origin": "http://testserver", "Sec-Fetch-Site": "same-origin"},
+    )
     plain = c.post("/api/auth/login", json={"username": "x", "password": "y"})
     assert same.status_code == 401 and plain.status_code == 401  # reached the login logic
 
@@ -58,12 +60,16 @@ def test_same_origin_and_non_browser_requests_pass():
 def test_origin_matching_forwarded_host_from_a_proxy_passes():
     """A dev proxy (Vite) rewrites Host to the backend; X-Forwarded-Host keeps the page's host."""
     c = TestClient(app)
-    r = c.post("/api/auth/login", json={"username": "x", "password": "y"},
-               headers={"Origin": "http://localhost:5173", "X-Forwarded-Host": "localhost:5173"})
+    r = c.post(
+        "/api/auth/login",
+        json={"username": "x", "password": "y"},
+        headers={"Origin": "http://localhost:5173", "X-Forwarded-Host": "localhost:5173"},
+    )
     assert r.status_code == 401
 
 
 # -- request size --------------------------------------------------------------------------------
+
 
 def test_chunked_body_without_content_length_is_limited():
     def chunks():
@@ -83,6 +89,7 @@ def test_login_fields_have_length_limits():
 
 
 # -- login limits --------------------------------------------------------------------------------
+
 
 def test_failures_from_one_address_are_capped_across_usernames():
     """Junk usernames from one address can no longer push the real account's counter out."""
@@ -113,6 +120,7 @@ def test_existing_account_is_capped_across_addresses(monkeypatch):
 
 
 # -- Cloudflare Access ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def cf_only(monkeypatch):
@@ -147,11 +155,17 @@ def test_forced_jwks_refresh_is_throttled(monkeypatch):
 
 # -- secrets in error messages -------------------------------------------------------------------
 
+
 def test_service_account_private_key_is_scrubbed(monkeypatch):
     # PEM markers built at runtime, so secret scanners do not flag this fake key in the repo.
     begin, end = "-----BEGIN " + "PRIVATE KEY-----", "-----END " + "PRIVATE KEY-----"
-    blob = ('{"type": "service_account", "private_key": "' + begin + '\\nMIIE\\n' + end
-            + '\\n", "client_email": "x@project.example"}')
+    blob = (
+        '{"type": "service_account", "private_key": "'
+        + begin
+        + "\\nMIIE\\n"
+        + end
+        + '\\n", "client_email": "x@project.example"}'
+    )
     monkeypatch.setattr(settings, "ga4_service_account_json", blob)
     msg = marketing_sync._bez_sekretow(f"[Errno 2] No such file or directory: '{blob}'")
     assert "MIIE" not in msg and "PRIVATE KEY" not in msg
@@ -159,15 +173,19 @@ def test_service_account_private_key_is_scrubbed(monkeypatch):
 
 def test_ga4_accepts_json_content(monkeypatch):
     seen = {}
-    fake = SimpleNamespace(Credentials=SimpleNamespace(
-        from_service_account_info=lambda info: seen.setdefault("info", info),
-        from_service_account_file=lambda path: pytest.fail("JSON treated as a file path")))
+    fake = SimpleNamespace(
+        Credentials=SimpleNamespace(
+            from_service_account_info=lambda info: seen.setdefault("info", info),
+            from_service_account_file=lambda path: pytest.fail("JSON treated as a file path"),
+        )
+    )
     monkeypatch.setattr(settings, "ga4_service_account_json", '{"type": "service_account"}')
     marketing_sync._ga4_credentials(fake)
     assert seen["info"] == {"type": "service_account"}
 
 
 # -- SMTP ----------------------------------------------------------------------------------------
+
 
 def test_notification_subject_with_newlines_is_flattened(monkeypatch):
     sent = []
@@ -191,8 +209,12 @@ def test_notification_subject_with_newlines_is_flattened(monkeypatch):
         def send_message(self, msg):
             sent.append(msg)
 
-    for key, value in {"smtp_host": "smtp.example", "smtp_user": "panel@example.com",
-                       "smtp_password": "x", "smtp_starttls": True}.items():
+    for key, value in {
+        "smtp_host": "smtp.example",
+        "smtp_user": "panel@example.com",
+        "smtp_password": "x",
+        "smtp_starttls": True,
+    }.items():
         monkeypatch.setattr(settings, key, value)
     monkeypatch.setattr(notifications.smtplib, "SMTP", FakeSMTP)
     notifications.send_email("Nowe zamówienie: Firma\r\nBcc: ofiara@example.com", "treść")
@@ -200,6 +222,7 @@ def test_notification_subject_with_newlines_is_flattened(monkeypatch):
 
 
 # -- password change -----------------------------------------------------------------------------
+
 
 def test_password_change_revokes_sessions(monkeypatch):
     from app.scripts import create_user
@@ -209,8 +232,11 @@ def test_password_change_revokes_sessions(monkeypatch):
     user = User(username=username, password_hash=hash_password("stare-haslo-123"))
     db.add(user)
     db.commit()
-    db.add(SessionModel(token=secrets.token_hex(32), user_id=user.id,
-                        expires_at=datetime.now(timezone.utc) + timedelta(days=1)))
+    db.add(
+        SessionModel(
+            token=secrets.token_hex(32), user_id=user.id, expires_at=datetime.now(timezone.utc) + timedelta(days=1)
+        )
+    )
     db.commit()
     try:
         monkeypatch.setenv("POLSALES_USERNAME", username)

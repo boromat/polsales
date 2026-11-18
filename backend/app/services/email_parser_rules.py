@@ -124,11 +124,7 @@ def _extract_products(lines: list[str]) -> list[dict]:
             if not low:  # pusta linia kończy sekcję produktów
                 break
             # kolejna etykieta pola kończy sekcję
-            if m and any(
-                m.group(1).strip().lower().startswith(k)
-                for keys in LABELS.values()
-                for k in keys
-            ):
+            if m and any(m.group(1).strip().lower().startswith(k) for keys in LABELS.values() for k in keys):
                 break
             _append_product(products, line.strip())
     return products
@@ -152,9 +148,7 @@ def _append_product(products: list[dict], text: str) -> None:
         name = m.group(1).strip(" -x×")
         qty = float(m.group(2).replace(",", "."))
         unit = m.group(3)
-    products.append(
-        {"raw_name": name or text, "quantity": qty, "unit": unit, "variant_notes": None, "confidence": 1.0}
-    )
+    products.append({"raw_name": name or text, "quantity": qty, "unit": unit, "variant_notes": None, "confidence": 1.0})
 
 
 # --- Zgłoszenie współpracy (klub sportowy / hurtownik) - kontrakt `[wspolpraca-v1]` -------------

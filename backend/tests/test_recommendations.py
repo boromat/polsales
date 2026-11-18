@@ -17,11 +17,11 @@ from app.services.recommendations import (
 
 
 def _channel(code, name, spend, orders, revenue, roas):
-    return {"code": code, "name": name, "spend": spend, "orders": orders,
-            "revenue_net": revenue, "roas": roas}
+    return {"code": code, "name": name, "spend": spend, "orders": orders, "revenue_net": revenue, "roas": roas}
 
 
 # --- Okno agregacji zsynchronizowane z PERIOD_DAYS (off-by-one) ---------------------------------
+
 
 def test_window_matches_period_days():
     dt = date(2026, 7, 20)
@@ -31,6 +31,7 @@ def test_window_matches_period_days():
 
 
 # --- Baseline: brak sprzecznych rad przy najlepszym kanale ROAS<1 -------------------------------
+
 
 def test_no_budget_increase_when_best_roas_below_one():
     agg = {"channels": [_channel("meta_ads", "Meta Ads", 100.0, 1, 50.0, 0.5)], "top_products": []}
@@ -43,25 +44,28 @@ def test_no_budget_increase_when_best_roas_below_one():
 
 
 def test_best_channel_increase_only_when_profitable():
-    agg = {"channels": [
-        _channel("meta_ads", "Meta Ads", 100.0, 5, 300.0, 3.0),
-        _channel("google_ads", "Google Ads", 200.0, 1, 100.0, 0.5),
-    ], "top_products": []}
+    agg = {
+        "channels": [
+            _channel("meta_ads", "Meta Ads", 100.0, 5, 300.0, 3.0),
+            _channel("google_ads", "Google Ads", 200.0, 1, 100.0, 0.5),
+        ],
+        "top_products": [],
+    }
     recs = _baseline_recommendations(agg)
     titles = " | ".join(r["title"] for r in recs)
     assert "najlepszy ROAS" in titles  # rentowny kanał → zwiększenie budżetu
-    assert "poniżej 1" in titles       # nierentowny kanał → ograniczenie
+    assert "poniżej 1" in titles  # nierentowny kanał → ograniczenie
 
 
 def test_channels_without_roas_are_ignored():
     # Kanał bez wydatków/ROAS (None) nie może wywołać rekomendacji budżetowej.
-    agg = {"channels": [_channel("seo_direct", "SEO / bezpośredni", 0.0, 3, 900.0, None)],
-           "top_products": []}
+    agg = {"channels": [_channel("seo_direct", "SEO / bezpośredni", 0.0, 3, 900.0, None)], "top_products": []}
     recs = _baseline_recommendations(agg)
     assert all(r["category"] != "budget_allocation" for r in recs)
 
 
 # --- Dedupe hash ze STABILNYCH pól (bez zmiennych liczb) ----------------------------------------
+
 
 def test_dedupe_hash_ignores_variable_numbers():
     h1 = _dedupe_hash("budget_allocation", "Meta Ads ma najlepszy ROAS (3.0)")
@@ -70,8 +74,7 @@ def test_dedupe_hash_ignores_variable_numbers():
 
 
 def test_dedupe_hash_distinguishes_subjects():
-    assert _dedupe_hash("budget_allocation", "kanał Meta Ads") != \
-        _dedupe_hash("budget_allocation", "kanał Google Ads")
+    assert _dedupe_hash("budget_allocation", "kanał Meta Ads") != _dedupe_hash("budget_allocation", "kanał Google Ads")
 
 
 def test_baseline_dedupe_stable_across_runs():
@@ -84,19 +87,32 @@ def test_baseline_dedupe_stable_across_runs():
 
 # --- Walidacja anty-halucynacyjna (decyzja #11) -------------------------------------------------
 
+
 def test_validation_keeps_grounded_metrics():
     agg = {"channels": [_channel("meta_ads", "Meta Ads", 100.0, 5, 300.0, 3.0)], "top_products": []}
     allowed = _allowed_numbers(agg)
-    recs = [{"category": "budget_allocation", "title": "x", "body": "ok",
-             "supporting_metrics": [{"metric": "roas", "value": 3.0}]}]
+    recs = [
+        {
+            "category": "budget_allocation",
+            "title": "x",
+            "body": "ok",
+            "supporting_metrics": [{"metric": "roas", "value": 3.0}],
+        }
+    ]
     assert len(_validate_recommendations(recs, allowed, "baseline")) == 1
 
 
 def test_validation_drops_ungrounded_metrics():
     agg = {"channels": [_channel("meta_ads", "Meta Ads", 100.0, 5, 300.0, 3.0)], "top_products": []}
     allowed = _allowed_numbers(agg)
-    recs = [{"category": "budget_allocation", "title": "zmyślone", "body": "b",
-             "supporting_metrics": [{"metric": "roas", "value": 42.0}]}]
+    recs = [
+        {
+            "category": "budget_allocation",
+            "title": "zmyślone",
+            "body": "b",
+            "supporting_metrics": [{"metric": "roas", "value": 42.0}],
+        }
+    ]
     assert _validate_recommendations(recs, allowed, "baseline") == []
 
 
@@ -104,8 +120,9 @@ def test_validation_ai_scans_body_numbers():
     agg = {"channels": [_channel("meta_ads", "Meta Ads", 100.0, 5, 300.0, 3.0)], "top_products": []}
     allowed = _allowed_numbers(agg)
     # Liczba w treści spoza danych → odrzucenie (tylko w trybie AI).
-    hallucination = [{"category": "budget_allocation", "title": "t",
-                      "body": "Zwiększ budżet o 4321 zł.", "supporting_metrics": []}]
+    hallucination = [
+        {"category": "budget_allocation", "title": "t", "body": "Zwiększ budżet o 4321 zł.", "supporting_metrics": []}
+    ]
     assert _validate_recommendations(hallucination, allowed, "ai") == []
     # Ta sama treść w trybie baseline nie jest skanowana (budowana z policzonych wartości).
     assert len(_validate_recommendations(hallucination, allowed, "baseline")) == 1
@@ -114,8 +131,7 @@ def test_validation_ai_scans_body_numbers():
 def test_validation_ai_accepts_thousand_separated_number():
     agg = {"channels": [], "top_products": [{"name": "Zestaw", "revenue_net": 1234.5}]}
     allowed = _allowed_numbers(agg)
-    rec = [{"category": "product", "title": "t",
-            "body": "Przychód 1 234,50 zł netto.", "supporting_metrics": []}]
+    rec = [{"category": "product", "title": "t", "body": "Przychód 1 234,50 zł netto.", "supporting_metrics": []}]
     assert len(_validate_recommendations(rec, allowed, "ai")) == 1
 
 
@@ -125,17 +141,21 @@ def test_validation_ai_accepts_narrow_nbsp_thousand_separator():
     agg = {"channels": [], "top_products": [{"name": "Zestaw", "revenue_net": 1234.5}]}
     allowed = _allowed_numbers(agg)
     for sep in (" ", " ", " "):
-        rec = [{"category": "product", "title": "t",
-                "body": f"Przychód 1{sep}234,50 zł netto.", "supporting_metrics": []}]
+        rec = [
+            {"category": "product", "title": "t", "body": f"Przychód 1{sep}234,50 zł netto.", "supporting_metrics": []}
+        ]
         assert len(_validate_recommendations(rec, allowed, "ai")) == 1, f"sep={sep!r}"
 
 
 def test_baseline_output_passes_own_validation():
     # Niezmiennik: baseline nigdy nie generuje własnej halucynacji.
-    agg = {"channels": [
-        _channel("meta_ads", "Meta Ads", 100.0, 5, 300.0, 3.0),
-        _channel("google_ads", "Google Ads", 200.0, 1, 100.0, 0.5),
-    ], "top_products": [{"name": "Zestaw", "revenue_net": 1234.5}]}
+    agg = {
+        "channels": [
+            _channel("meta_ads", "Meta Ads", 100.0, 5, 300.0, 3.0),
+            _channel("google_ads", "Google Ads", 200.0, 1, 100.0, 0.5),
+        ],
+        "top_products": [{"name": "Zestaw", "revenue_net": 1234.5}],
+    }
     recs = _baseline_recommendations(agg)
     allowed = _allowed_numbers(agg)
     assert _validate_recommendations(recs, allowed, "baseline") == recs

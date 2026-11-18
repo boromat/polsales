@@ -56,9 +56,7 @@ def upgrade() -> None:
         END $$;
         """
     )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_conversations_user_updated ON chat.conversations (user_id, updated_at)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_conversations_user_updated ON chat.conversations (user_id, updated_at)")
 
 
 def downgrade() -> None:

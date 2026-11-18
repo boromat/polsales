@@ -45,9 +45,7 @@ class ImapState(Base):
     folder: Mapped[str] = mapped_column(Text, nullable=False, default="INBOX", unique=True)
     uidvalidity: Mapped[int | None] = mapped_column(BigInteger)
     last_seen_uid: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class Email(Base):
@@ -85,7 +83,5 @@ class Email(Base):
     error_detail: Mapped[str | None] = mapped_column(Text)
     retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

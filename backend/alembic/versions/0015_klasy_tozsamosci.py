@@ -42,6 +42,7 @@ depends_on = None
 # smieciowy wpis w rodzaju "0" skleilby ze soba wszystkich, ktorzy go maja.
 _CYFRY = "regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g')"
 
+
 # Reprezentantem klasy jest NAJMNIEJSZE id kontaktu w grupie danego maila / telefonu.
 # `min(...) OVER (PARTITION BY ...)` skleja tez wszystkie NULL-e w jedna partycje, dlatego
 # kazde uzycie jest oslonione warunkiem "pole niepuste" - inaczej wszystkie kontakty bez
@@ -65,10 +66,10 @@ WITH norm AS (
            CASE WHEN length({_CYFRY}) >= 9 THEN right({_CYFRY}, 9) END AS tel
     FROM core.contacts
 ), runda1 AS (
-    SELECT n.id, n.mail, n.tel, {_etykieta('n')} AS etykieta
+    SELECT n.id, n.mail, n.tel, {_etykieta("n")} AS etykieta
     FROM norm n
 ), runda2 AS (
-    SELECT r.id, {_etykieta('r')} AS etykieta
+    SELECT r.id, {_etykieta("r")} AS etykieta
     FROM runda1 r
 )
 SELECT id AS contact_id, etykieta AS kanon_id FROM runda2;
@@ -95,11 +96,7 @@ _KLUCZ_STARY = f"""COALESCE(
 
 
 def _v_orders_all(klucz: str, *, z_klasami: bool) -> str:
-    join_klas = (
-        "LEFT JOIN analytics.v_tozsamosc_kontaktu ti ON ti.contact_id = o.contact_id"
-        if z_klasami
-        else ""
-    )
+    join_klas = "LEFT JOIN analytics.v_tozsamosc_kontaktu ti ON ti.contact_id = o.contact_id" if z_klasami else ""
     return f"""
         CREATE OR REPLACE VIEW analytics.v_orders_all AS
         SELECT o.id, o.order_no, o.ordered_at, o.ordered_at::date AS order_date,

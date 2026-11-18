@@ -13,8 +13,16 @@ from app.services import email_parser_ai
 
 
 def _result(confidence):
-    return {"is_order": True, "confidence": confidence, "order_type": "zamowienie", "products": [],
-            "customer": None, "attribution": None, "notes": None, "ambiguities": []}
+    return {
+        "is_order": True,
+        "confidence": confidence,
+        "order_type": "zamowienie",
+        "products": [],
+        "customer": None,
+        "attribution": None,
+        "notes": None,
+        "ambiguities": [],
+    }
 
 
 @pytest.fixture()
@@ -35,8 +43,13 @@ def calls(monkeypatch):
 
 
 def _parse():
-    return email_parser_ai.parse_free_text(subject="Zamówienie", from_addr="biuro@orlik.example",
-                                           from_name=None, body_text="Proszę 5 piłek.", when="2026-11-10")
+    return email_parser_ai.parse_free_text(
+        subject="Zamówienie",
+        from_addr="biuro@orlik.example",
+        from_name=None,
+        body_text="Proszę 5 piłek.",
+        when="2026-11-10",
+    )
 
 
 def test_setting_exists_and_is_read_from_the_environment(monkeypatch):

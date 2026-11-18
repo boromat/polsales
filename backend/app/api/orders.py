@@ -54,9 +54,7 @@ def list_orders(
 
 @router.get("/{order_id}", response_model=OrderDetailOut)
 def get_order(order_id: int, db: DBSession = Depends(get_db)) -> OrderDetailOut:
-    order = db.scalar(
-        select(Order).where(Order.id == order_id).options(selectinload(Order.items))
-    )
+    order = db.scalar(select(Order).where(Order.id == order_id).options(selectinload(Order.items)))
     if order is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono zamówienia")
     base = _to_out(db, order)
@@ -66,9 +64,7 @@ def get_order(order_id: int, db: DBSession = Depends(get_db)) -> OrderDetailOut:
 @router.patch("/{order_id}", response_model=OrderDetailOut)
 def patch_order(order_id: int, data: OrderPatchIn, db: DBSession = Depends(get_db)) -> OrderDetailOut:
     """Edycja zamówienia: zmiana statusu (w tym anulowanie) i/lub notatki."""
-    order = db.scalar(
-        select(Order).where(Order.id == order_id).options(selectinload(Order.items))
-    )
+    order = db.scalar(select(Order).where(Order.id == order_id).options(selectinload(Order.items)))
     if order is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono zamówienia")
     if data.status is not None:

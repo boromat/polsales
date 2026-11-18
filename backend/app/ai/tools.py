@@ -18,8 +18,14 @@ MAX_RANGE_DAYS = 400
 CHANNEL_ENUM = ["all", "meta_ads", "google_ads", "fb_ig_organic", "seo_direct", "polecenie", "inny"]
 SEGMENT_ENUM = ["all", "b2b", "b2c"]
 METRIC_ENUM = [
-    "revenue_net", "orders_count", "avg_order_value_net",
-    "sessions", "clicks", "impressions", "ad_spend", "new_customers",
+    "revenue_net",
+    "orders_count",
+    "avg_order_value_net",
+    "sessions",
+    "clicks",
+    "impressions",
+    "ad_spend",
+    "new_customers",
 ]
 # Metryki zamówieniowe liczone z analytics.v_orders_all (granulacja godzinowa dozwolona - decyzja #7).
 ORDER_METRICS = {"revenue_net", "orders_count", "avg_order_value_net", "new_customers"}
@@ -78,7 +84,8 @@ TOOLS = [
         "działa tylko dla metryk zamówieniowych (revenue_net, orders_count); dla marketingowych użyj 'day'.",
         {
             "metrics": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": METRIC_ENUM}},
-            "date_from": _DATE, "date_to": _DATE,
+            "date_from": _DATE,
+            "date_to": _DATE,
             "granularity": {"type": "string", "enum": GRANULARITY_ENUM},
             "channel": {"type": "string", "enum": CHANNEL_ENUM},
             "segment": {"type": "string", "enum": SEGMENT_ENUM},
@@ -91,7 +98,8 @@ TOOLS = [
         "Nie obejmuje zamówień anulowanych - jeśli użytkownik pyta o anulowane, powiedz, "
         "że tych danych nie masz w narzędziach, i nie zgaduj.",
         {
-            "date_from": _DATE, "date_to": _DATE,
+            "date_from": _DATE,
+            "date_to": _DATE,
             "segment": {"type": "string", "enum": SEGMENT_ENUM},
             "nip": {"type": ["string", "null"], "description": "NIP firmy (10 cyfr) lub null"},
             # UWAGA: bez 'anulowane'. Widok analytics.v_orders_all ma WHERE status <> 'anulowane',
@@ -122,7 +130,8 @@ TOOLS = [
         "get_campaign_stats",
         "Statystyki kampanii płatnych (Meta Ads / Google Ads): wydatki, wyświetlenia, kliknięcia, CTR, CPC.",
         {
-            "date_from": _DATE, "date_to": _DATE,
+            "date_from": _DATE,
+            "date_to": _DATE,
             "platform": {"type": "string", "enum": ["meta_ads", "google_ads", "all"]},
             "limit": {"type": "integer", "minimum": 1, "maximum": 50},
         },
@@ -132,7 +141,8 @@ TOOLS = [
         "get_top_products",
         "Ranking produktów za okres wg przychodu netto, ilości lub liczby zamówień.",
         {
-            "date_from": _DATE, "date_to": _DATE,
+            "date_from": _DATE,
+            "date_to": _DATE,
             "metric": {"type": "string", "enum": ["revenue_net", "quantity", "orders_count"]},
             "segment": {"type": "string", "enum": SEGMENT_ENUM},
             "limit": {"type": "integer", "minimum": 1, "maximum": 50},
@@ -143,8 +153,10 @@ TOOLS = [
         "compare_periods",
         "Porównanie dwóch okresów dla wybranych metryk: wartości i zmiana procentowa.",
         {
-            "period_a_from": _DATE, "period_a_to": _DATE,
-            "period_b_from": _DATE, "period_b_to": _DATE,
+            "period_a_from": _DATE,
+            "period_a_to": _DATE,
+            "period_b_from": _DATE,
+            "period_b_to": _DATE,
             "metrics": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": METRIC_ENUM}},
             "channel": {"type": "string", "enum": CHANNEL_ENUM},
             "segment": {"type": "string", "enum": SEGMENT_ENUM},
@@ -171,7 +183,8 @@ TOOLS = [
         "Ranking formatów reklamowych za okres (płatne: CTR; organiczne: zaangażowanie na wyświetlenie). "
         "Wskazuje, które formaty (video/reels/carousel/image/photo) działają najlepiej.",
         {
-            "date_from": _DATE, "date_to": _DATE,
+            "date_from": _DATE,
+            "date_to": _DATE,
             "platform": {"type": "string", "enum": ["all", "meta_ads", "google_ads", "fb_ig_organic"]},
             "limit": {"type": "integer", "minimum": 1, "maximum": 30},
         },
@@ -316,8 +329,14 @@ def _bucket_label(value, granularity: str) -> str:
 
 
 _SERIES_DEFAULTS = {
-    "revenue_net": 0.0, "orders_count": 0, "avg_order_value_net": None,
-    "sessions": 0, "clicks": 0, "impressions": 0, "ad_spend": 0.0, "new_customers": 0,
+    "revenue_net": 0.0,
+    "orders_count": 0,
+    "avg_order_value_net": None,
+    "sessions": 0,
+    "clicks": 0,
+    "impressions": 0,
+    "ad_spend": 0.0,
+    "new_customers": 0,
 }
 
 
@@ -423,10 +442,7 @@ def _metrics_series(
             if "ad_spend" in requested:
                 b["ad_spend"] = round(float(r.spend), 2)
 
-    return [
-        {"bucket": k, **{m: buckets[k].get(m, _SERIES_DEFAULTS[m]) for m in metrics}}
-        for k in sorted(buckets)
-    ]
+    return [{"bucket": k, **{m: buckets[k].get(m, _SERIES_DEFAULTS[m]) for m in metrics}} for k in sorted(buckets)]
 
 
 def _exec_query_metrics(db, p) -> dict:
@@ -436,8 +452,11 @@ def _exec_query_metrics(db, p) -> dict:
     df, dt = _validate_range(p["date_from"], p["date_to"])
     gran = p["granularity"]
     out = {
-        "date_from": df.isoformat(), "date_to": dt.isoformat(),
-        "channel": p["channel"], "segment": p["segment"], "granularity": gran,
+        "date_from": df.isoformat(),
+        "date_to": dt.isoformat(),
+        "channel": p["channel"],
+        "segment": p["segment"],
+        "granularity": gran,
     }
     if gran == "total":
         all_metrics = _metrics_total(db, df, dt, p["channel"], p["segment"])
@@ -464,14 +483,18 @@ def _exec_get_orders(db, p) -> dict:
     if seg:
         clauses.append(seg.replace("v.", ""))
     where = " AND ".join(clauses)
-    rows = db.execute(
-        text(
-            f"""SELECT order_no, order_date, company_name, total_net, status, attribution_channel
+    rows = (
+        db.execute(
+            text(
+                f"""SELECT order_no, order_date, company_name, total_net, status, attribution_channel
                 FROM analytics.v_orders_all v WHERE {where}
                 ORDER BY ordered_at DESC LIMIT :lim"""
-        ),
-        params,
-    ).mappings().all()
+            ),
+            params,
+        )
+        .mappings()
+        .all()
+    )
     return {"count": len(rows), "orders": [dict(r) | {"order_date": r["order_date"].isoformat()} for r in rows]}
 
 
@@ -498,33 +521,41 @@ def _exec_company_profile(db, p) -> dict:
         where, val = "company_id = :v", p["company_id"]
     else:
         raise ToolError("Podaj nip lub company_id")
-    row = db.execute(
-        text(
-            f"""SELECT company_id, company_name, nip, ltv_net, orders_count, frequency_days,
+    row = (
+        db.execute(
+            text(
+                f"""SELECT company_id, company_name, nip, ltv_net, orders_count, frequency_days,
                        first_order, last_order, avg_order_value_net, avg_lead_time_days
                 FROM analytics.v_company_metrics WHERE {where}"""
-        ),
-        {"v": val},
-    ).mappings().first()
+            ),
+            {"v": val},
+        )
+        .mappings()
+        .first()
+    )
     if not row:
         return {"found": False}
     out = {k: _profile_value(v) for k, v in row.items()}
     out["found"] = True
     if p.get("include_order_history"):
-        hist = db.execute(
-            text(
-                """SELECT order_no, order_date, total_net, status FROM analytics.v_orders_all
+        hist = (
+            db.execute(
+                text(
+                    """SELECT order_no, order_date, total_net, status FROM analytics.v_orders_all
                    WHERE company_id = :id ORDER BY ordered_at DESC LIMIT 20"""
-            ),
-            {"id": row["company_id"]},
-        ).mappings().all()
+                ),
+                {"id": row["company_id"]},
+            )
+            .mappings()
+            .all()
+        )
         out["orders"] = [dict(h) | {"order_date": h["order_date"].isoformat()} for h in hist]
     return out
 
 
 def _exec_get_funnel(db, p) -> dict:
-    """Narzędzie get_funnel: lejek wyświetlenia -> kliknięcia -> sesje -> zamówienia ze współczynnikami między etapami.
-    """
+    """Narzędzie get_funnel: lejek wyświetlenia -> kliknięcia -> sesje -> zamówienia
+    ze współczynnikami między etapami."""
     from app.services.marketing import funnel
 
     df, dt = _validate_range(p["date_from"], p["date_to"])
@@ -541,24 +572,32 @@ def _exec_campaign_stats(db, p) -> dict:
         clauses.append("platform = :plat")
         params["plat"] = p["platform"]
     where = " AND ".join(clauses)
-    rows = db.execute(
-        text(
-            f"""SELECT platform, campaign_name,
+    rows = (
+        db.execute(
+            text(
+                f"""SELECT platform, campaign_name,
                        sum(impressions) imp, sum(clicks) clk, sum(spend) spend
                 FROM analytics.v_campaign_stats WHERE {where}
                 GROUP BY platform, campaign_name
                 ORDER BY sum(spend) DESC LIMIT :lim"""
-        ),
-        params,
-    ).mappings().all()
+            ),
+            params,
+        )
+        .mappings()
+        .all()
+    )
     return {"campaigns": [{"platform": r["platform"], **_camp(r)} for r in rows]}
 
 
 def _camp(r) -> dict:
     imp, clk, spend = int(r["imp"]), int(r["clk"]), float(r["spend"])
     return {
-        "campaign": r["campaign_name"], "impressions": imp, "clicks": clk, "spend": round(spend, 2),
-        "ctr": round(clk / imp, 4) if imp else None, "cpc": round(spend / clk, 2) if clk else None,
+        "campaign": r["campaign_name"],
+        "impressions": imp,
+        "clicks": clk,
+        "spend": round(spend, 2),
+        "ctr": round(clk / imp, 4) if imp else None,
+        "cpc": round(spend / clk, 2) if clk else None,
     }
 
 
@@ -568,22 +607,30 @@ def _exec_top_products(db, p) -> dict:
     df, dt = _validate_range(p["date_from"], p["date_to"])
     order_by = {"revenue_net": "revenue", "quantity": "qty", "orders_count": "orders"}[p["metric"]]
     seg = _segment_clause(p["segment"], "v")
-    rows = db.execute(
-        text(
-            f"""SELECT product_name name,
+    rows = (
+        db.execute(
+            text(
+                f"""SELECT product_name name,
                        sum(quantity) qty, sum(line_net) revenue, count(DISTINCT order_id) orders
                 FROM analytics.v_product_sales v
                 WHERE status IN {CONFIRMED_STATUSES}
                   AND order_date BETWEEN :df AND :dt {seg}
                 GROUP BY product_name
                 ORDER BY {order_by} DESC LIMIT :lim"""
-        ),
-        {"df": df, "dt": dt, "lim": _limit(p)},
-    ).mappings().all()
+            ),
+            {"df": df, "dt": dt, "lim": _limit(p)},
+        )
+        .mappings()
+        .all()
+    )
     return {
         "products": [
-            {"name": r["name"], "quantity": float(r["qty"]), "revenue_net": round(float(r["revenue"]), 2),
-             "orders": int(r["orders"])}
+            {
+                "name": r["name"],
+                "quantity": float(r["qty"]),
+                "revenue_net": round(float(r["revenue"]), 2),
+                "orders": int(r["orders"]),
+            }
             for r in rows
         ]
     }
@@ -606,34 +653,42 @@ def _exec_compare_periods(db, p) -> dict:
 def _exec_recommendations(db, p) -> dict:
     """Narzędzie get_recommendations: aktywne rekomendacje działań (AI lub regułowe) z metrykami źródłowymi."""
     # Widok-bramka analytics.v_recommendations (decyzja #9) - narzędzia nie czytają core.recommendations.
-    exists = db.execute(
-        text("SELECT to_regclass('analytics.v_recommendations') IS NOT NULL")
-    ).scalar()
+    exists = db.execute(text("SELECT to_regclass('analytics.v_recommendations') IS NOT NULL")).scalar()
     if not exists:
         return {"recommendations": [], "note": "Moduł rekomendacji jeszcze nieaktywny."}
     where = "" if p["status"] == "all" else "WHERE status = :st"
     params = {"lim": _limit(p)}
     if p["status"] != "all":
         params["st"] = p["status"]
-    rows = db.execute(
-        text(f"SELECT title, body, category, confidence FROM analytics.v_recommendations {where} "
-             f"ORDER BY created_at DESC LIMIT :lim"),
-        params,
-    ).mappings().all()
+    rows = (
+        db.execute(
+            text(
+                f"SELECT title, body, category, confidence FROM analytics.v_recommendations {where} "
+                f"ORDER BY created_at DESC LIMIT :lim"
+            ),
+            params,
+        )
+        .mappings()
+        .all()
+    )
     return {"recommendations": [dict(r) for r in rows]}
 
 
 def _exec_pending_drafts(db, p) -> dict:
     """Narzędzie get_pending_drafts: szkice zamówień z maili czekające na weryfikację."""
     # Widok-bramka analytics.v_pending_drafts (decyzja #9) - narzędzia nie czytają core.*/mail.*.
-    rows = db.execute(
-        text(
-            """SELECT id, company_name, nip, subject, from_addr, items_count AS items
+    rows = (
+        db.execute(
+            text(
+                """SELECT id, company_name, nip, subject, from_addr, items_count AS items
                FROM analytics.v_pending_drafts
                WHERE status = 'do_weryfikacji' ORDER BY created_at DESC LIMIT :lim"""
-        ),
-        {"lim": _limit(p)},
-    ).mappings().all()
+            ),
+            {"lim": _limit(p)},
+        )
+        .mappings()
+        .all()
+    )
     return {"count": len(rows), "drafts": [dict(r) for r in rows]}
 
 
@@ -647,81 +702,124 @@ def _exec_ad_formats(db, p) -> dict:
         clauses.append("platform = :plat")
         params["plat"] = p["platform"]
     where = " AND ".join(clauses)
-    rows = db.execute(
-        text(
-            f"""SELECT platform, kind, format, sum(impressions) imp, sum(clicks) clk, sum(spend) spend,
+    rows = (
+        db.execute(
+            text(
+                f"""SELECT platform, kind, format, sum(impressions) imp, sum(clicks) clk, sum(spend) spend,
                        sum(views) views, sum(engagement) eng
                 FROM analytics.v_ad_format_stats WHERE {where}
                 GROUP BY platform, kind, format ORDER BY (sum(spend)+sum(views)) DESC LIMIT :lim"""
-        ),
-        params,
-    ).mappings().all()
+            ),
+            params,
+        )
+        .mappings()
+        .all()
+    )
     out = []
     for r in rows:
         imp, clk, views, eng = int(r["imp"]), int(r["clk"]), int(r["views"]), int(r["eng"])
-        out.append({
-            "platform": r["platform"], "kind": r["kind"], "format": r["format"],
-            "impressions": imp, "clicks": clk, "spend": round(float(r["spend"]), 2),
-            "views": views, "engagement": eng,
-            "ctr": round(clk / imp, 4) if imp else None,
-            "engagement_rate": round(eng / views, 4) if views else None,
-        })
+        out.append(
+            {
+                "platform": r["platform"],
+                "kind": r["kind"],
+                "format": r["format"],
+                "impressions": imp,
+                "clicks": clk,
+                "spend": round(float(r["spend"]), 2),
+                "views": views,
+                "engagement": eng,
+                "ctr": round(clk / imp, 4) if imp else None,
+                "engagement_rate": round(eng / views, 4) if views else None,
+            }
+        )
     return {"formats": out}
 
 
 def _exec_organic_engagement(db, p) -> dict:
     """Narzędzie get_organic_engagement: zaangażowanie postów organicznych FB/IG wg typu treści."""
     df, dt = _validate_range(p["date_from"], p["date_to"])
-    rows = db.execute(
-        text(
-            """SELECT post_type, sum(posts) posts, sum(views) views, sum(likes) likes,
+    rows = (
+        db.execute(
+            text(
+                """SELECT post_type, sum(posts) posts, sum(views) views, sum(likes) likes,
                       sum(comments) comments, sum(shares) shares, sum(engagement) eng
                FROM analytics.v_organic_engagement WHERE date BETWEEN :df AND :dt
                GROUP BY post_type ORDER BY sum(engagement) DESC"""
-        ),
-        {"df": df, "dt": dt},
-    ).mappings().all()
-    return {"by_post_type": [
-        {"post_type": r["post_type"], "posts": int(r["posts"]), "views": int(r["views"]),
-         "likes": int(r["likes"]), "comments": int(r["comments"]), "shares": int(r["shares"]),
-         "engagement": int(r["eng"])}
-        for r in rows
-    ]}
+            ),
+            {"df": df, "dt": dt},
+        )
+        .mappings()
+        .all()
+    )
+    return {
+        "by_post_type": [
+            {
+                "post_type": r["post_type"],
+                "posts": int(r["posts"]),
+                "views": int(r["views"]),
+                "likes": int(r["likes"]),
+                "comments": int(r["comments"]),
+                "shares": int(r["shares"]),
+                "engagement": int(r["eng"]),
+            }
+            for r in rows
+        ]
+    }
 
 
 def _exec_email_trends(db, p) -> dict:
-    """Narzędzie get_email_product_trends: produkty wspominane w mailach (szkicach) - sygnał popytu przed zamówieniem.
-    """
+    """Narzędzie get_email_product_trends: produkty wspominane w mailach (szkicach)
+    - sygnał popytu przed zamówieniem."""
     df, dt = _validate_range(p["date_from"], p["date_to"])
-    rows = db.execute(
-        text(
-            """SELECT product, sum(mentions) mentions, sum(quantity) qty, count(DISTINCT date) days
+    rows = (
+        db.execute(
+            text(
+                """SELECT product, sum(mentions) mentions, sum(quantity) qty, count(DISTINCT date) days
                FROM analytics.v_email_product_trends WHERE date BETWEEN :df AND :dt
                GROUP BY product ORDER BY sum(mentions) DESC, sum(quantity) DESC LIMIT :lim"""
-        ),
-        {"df": df, "dt": dt, "lim": _limit(p)},
-    ).mappings().all()
-    return {"products": [
-        {"product": r["product"], "mentions": int(r["mentions"]),
-         "quantity": float(r["qty"] or 0), "days": int(r["days"])}
-        for r in rows
-    ]}
+            ),
+            {"df": df, "dt": dt, "lim": _limit(p)},
+        )
+        .mappings()
+        .all()
+    )
+    return {
+        "products": [
+            {
+                "product": r["product"],
+                "mentions": int(r["mentions"]),
+                "quantity": float(r["qty"] or 0),
+                "days": int(r["days"]),
+            }
+            for r in rows
+        ]
+    }
 
 
 def _exec_weekly_summary(db, p) -> dict:
     """Narzędzie get_weekly_summary: ostatnie zestawienia tygodniowe (nagłówek i treść)."""
-    rows = db.execute(
-        text(
-            """SELECT week_start, week_end, headline, body FROM analytics.v_weekly_summaries
+    rows = (
+        db.execute(
+            text(
+                """SELECT week_start, week_end, headline, body FROM analytics.v_weekly_summaries
                ORDER BY week_start DESC LIMIT :lim"""
-        ),
-        {"lim": _limit(p)},
-    ).mappings().all()
-    return {"summaries": [
-        {"week_start": r["week_start"].isoformat(), "week_end": r["week_end"].isoformat(),
-         "headline": r["headline"], "body": r["body"]}
-        for r in rows
-    ]}
+            ),
+            {"lim": _limit(p)},
+        )
+        .mappings()
+        .all()
+    )
+    return {
+        "summaries": [
+            {
+                "week_start": r["week_start"].isoformat(),
+                "week_end": r["week_end"].isoformat(),
+                "headline": r["headline"],
+                "body": r["body"],
+            }
+            for r in rows
+        ]
+    }
 
 
 EXECUTORS = {

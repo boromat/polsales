@@ -44,9 +44,7 @@ def _profil(db: DBSession, profile_id: int) -> CompetitorProfile:
 
 @router.get("", response_model=list[CompetitorOut])
 def lista(db: DBSession = Depends(get_db)) -> list[CompetitorProfile]:
-    return list(
-        db.scalars(select(CompetitorProfile).order_by(CompetitorProfile.grupa, CompetitorProfile.name)).all()
-    )
+    return list(db.scalars(select(CompetitorProfile).order_by(CompetitorProfile.grupa, CompetitorProfile.name)).all())
 
 
 @router.post("", response_model=CompetitorOut, status_code=201)
@@ -57,9 +55,7 @@ def dodaj(dane: CompetitorIn, db: DBSession = Depends(get_db)) -> CompetitorProf
         db.commit()
     except IntegrityError as exc:  # UNIQUE po ig_username
         db.rollback()
-        raise HTTPException(
-            status_code=409, detail="Konkurent z tym kontem Instagrama już istnieje"
-        ) from exc
+        raise HTTPException(status_code=409, detail="Konkurent z tym kontem Instagrama już istnieje") from exc
     db.refresh(p)
     return p
 
@@ -73,9 +69,7 @@ def zmien(profile_id: int, dane: CompetitorPatch, db: DBSession = Depends(get_db
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409, detail="Konkurent z tym kontem Instagrama już istnieje"
-        ) from exc
+        raise HTTPException(status_code=409, detail="Konkurent z tym kontem Instagrama już istnieje") from exc
     db.refresh(p)
     return p
 

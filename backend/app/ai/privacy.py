@@ -68,8 +68,7 @@ def polanon_status() -> dict[str, Any]:
     except Exception:  # noqa: BLE001 - a broken install is reported as missing, not a crash
         return info
     info["ner"] = (
-        importlib.util.find_spec("spacy") is not None
-        and importlib.util.find_spec("pl_core_news_md") is not None
+        importlib.util.find_spec("spacy") is not None and importlib.util.find_spec("pl_core_news_md") is not None
     )
     return info
 
@@ -118,7 +117,7 @@ class StreamRestorer:
         if partial is None or partial.end() - partial.start() > _MAX_PARTIAL:
             ready, self._buffer = self._buffer, ""
         else:
-            ready, self._buffer = self._buffer[: partial.start()], self._buffer[partial.start():]
+            ready, self._buffer = self._buffer[: partial.start()], self._buffer[partial.start() :]
         return self._restore(ready)
 
     def flush(self) -> str:

@@ -124,13 +124,17 @@ def login(
     db: DBSession = Depends(get_db),
 ) -> UserOut:
     if settings.cf_access_ready and settings.cf_access_only:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Logowanie hasłem jest wyłączone - użyj Cloudflare Access")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Logowanie hasłem jest wyłączone - użyj Cloudflare Access"
+        )
     bucket = _client_bucket(request)
     key = (bucket, data.username)
     now = time.monotonic()
-    if (_rate_limited(key) or len(_recent(_ip_failures, bucket, now)) >= _MAX_IP_FAILURES
-            or len(_recent(_user_failures, data.username, now)) >= _MAX_USER_FAILURES):
+    if (
+        _rate_limited(key)
+        or len(_recent(_ip_failures, bucket, now)) >= _MAX_IP_FAILURES
+        or len(_recent(_user_failures, data.username, now)) >= _MAX_USER_FAILURES
+    ):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Za dużo prób logowania. Spróbuj ponownie za 15 minut.",
@@ -147,9 +151,7 @@ def login(
         _hit(_ip_failures, bucket, now)
         if user is not None:
             _hit(_user_failures, data.username, now)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Nieprawidłowy login lub hasło"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nieprawidłowy login lub hasło")
 
     _reset(key)  # udane logowanie - zeruj licznik prób dla tego (IP, username)
     _user_failures.pop(data.username, None)

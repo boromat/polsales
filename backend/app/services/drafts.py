@@ -27,9 +27,7 @@ def create_draft(db: DBSession, parsed: dict, email_id: int | None) -> OrderDraf
 
     nip = normalize_nip(customer.get("nip"))
     # Atrybucja utm_formularz przy DOWOLNYM sygnale: UTM lub gclid/fbclid (nie tylko utm_source).
-    attribution_method = (
-        "utm_formularz" if any(attribution.get(k) for k in _ATTR_SIGNAL_KEYS) else None
-    )
+    attribution_method = "utm_formularz" if any(attribution.get(k) for k in _ATTR_SIGNAL_KEYS) else None
 
     draft = OrderDraft(
         email_id=email_id,
@@ -71,9 +69,7 @@ def create_draft(db: DBSession, parsed: dict, email_id: int | None) -> OrderDraf
 
 
 def pending_count(db: DBSession) -> int:
-    return db.scalar(
-        select(func.count()).select_from(OrderDraft).where(OrderDraft.status == "do_weryfikacji")
-    ) or 0
+    return db.scalar(select(func.count()).select_from(OrderDraft).where(OrderDraft.status == "do_weryfikacji")) or 0
 
 
 def problem_emails_count(db: DBSession) -> int:
@@ -81,16 +77,12 @@ def problem_emails_count(db: DBSession) -> int:
 
     Nie mają szkicu, więc bez osobnego licznika znikają z panelu bez śladu.
     """
-    return db.scalar(
-        select(func.count()).select_from(Email).where(Email.status == "blad_parsowania")
-    ) or 0
+    return db.scalar(select(func.count()).select_from(Email).where(Email.status == "blad_parsowania")) or 0
 
 
 def partner_emails_count(db: DBSession) -> int:
     """Otwarte zgłoszenia współpracy ze strony. Osobny licznik - to nie są zamówienia."""
-    return db.scalar(
-        select(func.count()).select_from(Email).where(Email.status == "wspolpraca")
-    ) or 0
+    return db.scalar(select(func.count()).select_from(Email).where(Email.status == "wspolpraca")) or 0
 
 
 def _draft_attribution_method(draft: OrderDraft) -> AttributionMethod | None:
@@ -102,8 +94,7 @@ def _draft_attribution_method(draft: OrderDraft) -> AttributionMethod | None:
     """
     raw_attr = (draft.raw_extraction or {}).get("attribution") or {}
     has_signal = any(
-        [draft.utm_source, draft.utm_medium, draft.utm_campaign]
-        + [raw_attr.get(k) for k in _ATTR_SIGNAL_KEYS]
+        [draft.utm_source, draft.utm_medium, draft.utm_campaign] + [raw_attr.get(k) for k in _ATTR_SIGNAL_KEYS]
     )
     if has_signal:
         return AttributionMethod.utm_formularz
@@ -132,17 +123,13 @@ def _pierwszy_kontakt(db: DBSession, email: Email | None, klient: str | None) ->
     z_formularza = email.is_form_email or (nadawca and nadawca == nadawca_formularza)
 
     if nadawca and not z_formularza:
-        daty.append(
-            db.scalar(select(func.min(Email.date_received)).where(Email.from_addr == nadawca))
-        )
+        daty.append(db.scalar(select(func.min(Email.date_received)).where(Email.from_addr == nadawca)))
 
     klient = (klient or "").strip().lower()
     if klient and klient != nadawca_formularza and klient != nadawca:
         daty.append(
             db.scalar(
-                select(func.min(Email.date_received)).where(
-                    Email.from_addr == klient, Email.is_form_email.is_(False)
-                )
+                select(func.min(Email.date_received)).where(Email.from_addr == klient, Email.is_form_email.is_(False))
             )
         )
     if klient and klient != nadawca_formularza:
@@ -168,9 +155,7 @@ def approve_draft(db: DBSession, draft: OrderDraft, payload: dict) -> object:
     email = db.get(Email, draft.email_id) if draft.email_id else None
     # Data zamówienia = data maila (lub utworzenia szkicu), NIE moment zatwierdzenia.
     ordered_at = (email.date_received if email and email.date_received else None) or draft.created_at
-    first_contact_at = _pierwszy_kontakt(
-        db, email, payload.get("contact_email") or draft.contact_email
-    )
+    first_contact_at = _pierwszy_kontakt(db, email, payload.get("contact_email") or draft.contact_email)
 
     # gclid/fbclid siedzą w surowej ekstrakcji, a create_order ich nie widzi - rozwiązujemy
     # kanał tutaj, żeby kliknięcie w reklamę nie przepadło (kaskada #15, krok 1).

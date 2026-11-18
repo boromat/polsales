@@ -35,8 +35,10 @@ def tool_calls(monkeypatch):
 
 def _missing_role_session():
     """A session like AssistantSessionLocal, but for a role that does not exist (no migrations)."""
-    engine = create_engine(settings.database_url, connect_args={
-        "options": "-c role=assistant_ro_missing -c statement_timeout=10000", "connect_timeout": 5})
+    engine = create_engine(
+        settings.database_url,
+        connect_args={"options": "-c role=assistant_ro_missing -c statement_timeout=10000", "connect_timeout": 5},
+    )
     return engine, sessionmaker(bind=engine)()
 
 
@@ -45,8 +47,19 @@ def _turn(db, conv, tool_db):
         (_resp([_tool("get_orders", {}), _tool("query_metrics", {}, call_id="toolu_2")], "tool_use"), []),
         (_resp([_text("Nie mogę sprawdzić danych.")]), ["Nie mogę sprawdzić danych."]),
     )
-    events = _events(list(assistant.run_stream(db, conv, "Ile zamówień w tym miesiącu?", None,
-                                               tool_db=tool_db, client=client, masker_factory=lambda _db: None)))
+    events = _events(
+        list(
+            assistant.run_stream(
+                db,
+                conv,
+                "Ile zamówień w tym miesiącu?",
+                None,
+                tool_db=tool_db,
+                client=client,
+                masker_factory=lambda _db: None,
+            )
+        )
+    )
     return client, events
 
 

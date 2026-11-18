@@ -92,28 +92,73 @@ B2C_TINT = colors.HexColor("#A5B4FC")
 FUNNEL_SHADES = [PRIMARY, colors.HexColor("#6366F1"), colors.HexColor("#818CF8"), colors.HexColor("#A5B4FC")]
 
 CHANNEL_COLORS = {
-    "meta_ads": META, "google_ads": GOOGLE, "fb_ig_organic": ORGANIC,
-    "seo_direct": DIRECT, "direct": DIRECT, "organic": ORGANIC,
-    "offline": OFFLINE, "brak": OFFLINE, "polecenie": DIRECT,
+    "meta_ads": META,
+    "google_ads": GOOGLE,
+    "fb_ig_organic": ORGANIC,
+    "seo_direct": DIRECT,
+    "direct": DIRECT,
+    "organic": ORGANIC,
+    "offline": OFFLINE,
+    "brak": OFFLINE,
+    "polecenie": DIRECT,
 }
 
 NBSP = " "
-PL_MONTHS = ["", "stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca",
-             "lipca", "sierpnia", "września", "października", "listopada", "grudnia"]
-PL_MONTHS_NOM = ["", "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
-                 "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"]
+PL_MONTHS = [
+    "",
+    "stycznia",
+    "lutego",
+    "marca",
+    "kwietnia",
+    "maja",
+    "czerwca",
+    "lipca",
+    "sierpnia",
+    "września",
+    "października",
+    "listopada",
+    "grudnia",
+]
+PL_MONTHS_NOM = [
+    "",
+    "Styczeń",
+    "Luty",
+    "Marzec",
+    "Kwiecień",
+    "Maj",
+    "Czerwiec",
+    "Lipiec",
+    "Sierpień",
+    "Wrzesień",
+    "Październik",
+    "Listopad",
+    "Grudzień",
+]
 
 HUMANIZE = {
     # kanały / platformy
-    "meta_ads": "Meta Ads", "google_ads": "Google Ads", "fb_ig_organic": "Facebook / Instagram",
-    "search": "Wyszukiwarka", "organic": "Organiczne", "direct": "Bezpośrednie",
-    "seo_direct": "SEO / bezpośrednie", "offline": "Offline", "brak": "Bez atrybucji",
+    "meta_ads": "Meta Ads",
+    "google_ads": "Google Ads",
+    "fb_ig_organic": "Facebook / Instagram",
+    "search": "Wyszukiwarka",
+    "organic": "Organiczne",
+    "direct": "Bezpośrednie",
+    "seo_direct": "SEO / bezpośrednie",
+    "offline": "Offline",
+    "brak": "Bez atrybucji",
     "polecenie": "Polecenie",
     # formaty
-    "reel": "Rolka", "reels": "Rolka", "carousel": "Karuzela", "image": "Zdjęcie",
-    "photo": "Zdjęcie", "video": "Wideo", "story": "Relacja", "link": "Link",
+    "reel": "Rolka",
+    "reels": "Rolka",
+    "carousel": "Karuzela",
+    "image": "Zdjęcie",
+    "photo": "Zdjęcie",
+    "video": "Wideo",
+    "story": "Relacja",
+    "link": "Link",
     # typ
-    "paid": "Płatny", "organic_post": "Organiczny",
+    "paid": "Płatny",
+    "organic_post": "Organiczny",
 }
 
 
@@ -140,9 +185,13 @@ def humanize(code) -> str:
 # Podzbiór bezpieczny do podmiany w wolnym tekście (tylko jednoznaczne kody - bez „brak", „polecenie"
 # itp., które są zwykłymi polskimi słowami i mogłyby zepsuć narrację).
 TEXT_HUMANIZE = {
-    "google_ads": "Google Ads", "meta_ads": "Meta Ads",
-    "fb_ig_organic": "Facebook / Instagram", "seo_direct": "SEO / bezpośrednie",
-    "reels": "Rolka", "reel": "Rolka", "carousel": "Karuzela",
+    "google_ads": "Google Ads",
+    "meta_ads": "Meta Ads",
+    "fb_ig_organic": "Facebook / Instagram",
+    "seo_direct": "SEO / bezpośrednie",
+    "reels": "Rolka",
+    "reel": "Rolka",
+    "carousel": "Karuzela",
 }
 _TEXT_HUMANIZE_RE = re.compile(
     r"(?<!\w)(" + "|".join(re.escape(k) for k in sorted(TEXT_HUMANIZE, key=len, reverse=True)) + r")(?!\w)",
@@ -207,8 +256,7 @@ def channel_label(c) -> str:
 def period_label(df: date, dt: date) -> str:
     """Ładny opis okresu - pełny miesiąc gdy pasuje, inaczej zakres dd.mm.rrrr."""
     is_full_month = (
-        df.day == 1 and df.month == dt.month and df.year == dt.year
-        and (dt + timedelta(days=1)).month != dt.month
+        df.day == 1 and df.month == dt.month and df.year == dt.year and (dt + timedelta(days=1)).month != dt.month
     )
     if is_full_month:
         return f"{PL_MONTHS_NOM[df.month]} {df.year}"
@@ -264,9 +312,17 @@ def _styles() -> dict:
 
 def _p(txt, size, color=INK, bold=False, align=0, leading=None):
     """Skrót na Paragraph z inline stylem (align: 0=lewo, 1=środek, 2=prawo)."""
-    return Paragraph(txt, ParagraphStyle(
-        "p", fontName=BOLD if bold else BODY, fontSize=size, textColor=color,
-        leading=leading or size + 2.5, alignment=align))
+    return Paragraph(
+        txt,
+        ParagraphStyle(
+            "p",
+            fontName=BOLD if bold else BODY,
+            fontSize=size,
+            textColor=color,
+            leading=leading or size + 2.5,
+            alignment=align,
+        ),
+    )
 
 
 def bar_cell(frac: float, width_mm: float, height_mm: float, color, track=TINT):
@@ -274,11 +330,17 @@ def bar_cell(frac: float, width_mm: float, height_mm: float, color, track=TINT):
     frac = max(0.0, min(1.0, frac or 0.0))
     if frac <= 0:
         t = Table([[""]], colWidths=[width_mm * mm], rowHeights=[height_mm * mm])
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, 0), track),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), track),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         return t
     fw = max(0.012, frac) * width_mm
     rest = max(0.0, width_mm - fw)
@@ -287,8 +349,10 @@ def bar_cell(frac: float, width_mm: float, height_mm: float, color, track=TINT):
     t = Table([row], colWidths=cols, rowHeights=[height_mm * mm])
     st = [
         ("BACKGROUND", (0, 0), (0, 0), color),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
     ]
     if len(cols) > 1:
         st.append(("BACKGROUND", (1, 0), (1, 0), track))
@@ -307,8 +371,8 @@ class SectionHeader(Flowable):
 
     keepWithNext = 1
 
-    PASEK = 7 * mm      # wysokość samego nagłówka
-    ODSTEP = 3 * mm     # światło pod nagłówkiem
+    PASEK = 7 * mm  # wysokość samego nagłówka
+    ODSTEP = 3 * mm  # światło pod nagłówkiem
 
     def __init__(self, number: str, title: str):
         super().__init__()
@@ -336,8 +400,9 @@ class SectionHeader(Flowable):
 class HBarChart(Flowable):
     """Poziomy wykres słupkowy (hand-drawn) - etykieta po lewej, zaokrąglony słupek, wartość na końcu."""
 
-    def __init__(self, items, value_key, label_key, color_fn, fmt_fn, unit="", dot_fn=None,
-                 label_w=42, bar_w=95, row_h=8):
+    def __init__(
+        self, items, value_key, label_key, color_fn, fmt_fn, unit="", dot_fn=None, label_w=42, bar_w=95, row_h=8
+    ):
         super().__init__()
         self.items = items
         self.value_key = value_key
@@ -414,25 +479,33 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
     formats = ad_format_ranking(db, date_from, date_to)[:8]
     organic = organic_engagement(db, date_from, date_to)
     weekly = list_summaries(db, 1)
-    products = db.execute(
-        text(
-            """SELECT product_name, round(sum(line_net),2) rev, sum(quantity) qty
+    products = (
+        db.execute(
+            text(
+                """SELECT product_name, round(sum(line_net),2) rev, sum(quantity) qty
                FROM analytics.v_product_sales
                WHERE status IN ('potwierdzone','zrealizowane') AND order_date BETWEEN :df AND :dt
                GROUP BY product_name ORDER BY rev DESC LIMIT 6"""
-        ),
-        {"df": date_from, "dt": date_to},
-    ).mappings().all()
-    seg = db.execute(
-        text(
-            """SELECT CASE WHEN company_id IS NOT NULL THEN 'B2B' ELSE 'B2C' END seg,
+            ),
+            {"df": date_from, "dt": date_to},
+        )
+        .mappings()
+        .all()
+    )
+    seg = (
+        db.execute(
+            text(
+                """SELECT CASE WHEN company_id IS NOT NULL THEN 'B2B' ELSE 'B2C' END seg,
                       count(*) orders, round(sum(total_net),2) revenue
                FROM analytics.v_orders_all
                WHERE status IN ('potwierdzone','zrealizowane') AND order_date BETWEEN :df AND :dt
                GROUP BY 1 ORDER BY 1"""
-        ),
-        {"df": date_from, "dt": date_to},
-    ).mappings().all()
+            ),
+            {"df": date_from, "dt": date_to},
+        )
+        .mappings()
+        .all()
+    )
 
     story: list = [NextPageTemplate("later")]
 
@@ -445,8 +518,11 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
             val += f' <font name="{BODY}" size="{max(8, size - 9)}" color="#64646E">{suffix}</font>'
         parts.append(Paragraph(val, ParagraphStyle("v", fontName=BOLD, fontSize=size, leading=size + 3, spaceBefore=2)))
         if sub:
-            parts.append(Paragraph(
-                sub, ParagraphStyle("s", fontName=BODY, fontSize=8.5, textColor=MUTED, leading=11, spaceBefore=1)))
+            parts.append(
+                Paragraph(
+                    sub, ParagraphStyle("s", fontName=BODY, fontSize=8.5, textColor=MUTED, leading=11, spaceBefore=1)
+                )
+            )
         if bar_frac is not None:
             parts.append(Spacer(1, 1.5 * mm))
             parts.append(bar_cell(bar_frac, 48, 2, PRIMARY))
@@ -459,11 +535,14 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
     margin_sub = f"{money_num(gm)} zł" if gm is not None else "brak kosztów produktów"
     hero = [
         kpi_cell("Przychód netto", money_num(kpi["revenue_net"]), "zł", hero=True),
-        kpi_cell("Marża brutto",
-                 pct_num(margin_pct) if margin_pct is not None else "-",
-                 "%" if margin_pct is not None else "",
-                 hero=True, sub=margin_sub,
-                 bar_frac=(float(margin_pct) / 100 if margin_pct is not None else None)),
+        kpi_cell(
+            "Marża brutto",
+            pct_num(margin_pct) if margin_pct is not None else "-",
+            "%" if margin_pct is not None else "",
+            hero=True,
+            sub=margin_sub,
+            bar_frac=(float(margin_pct) / 100 if margin_pct is not None else None),
+        ),
         kpi_cell("ROAS", roas_num(kpi["roas"]), "×" if kpi["roas"] is not None else "", hero=True),
     ]
     r2 = [
@@ -477,13 +556,19 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
         kpi_cell("Czas kontakt→sprzedaż", days_num(lead), "dni" if lead is not None else ""),
     ]
     kpi_grid = Table([hero, r2, r3], colWidths=[CONTENT_W / 3] * 3)
-    kpi_grid.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 1), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 9), ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
-        ("LINEABOVE", (0, 0), (-1, 0), 0.6, LINE),
-        ("LINEBELOW", (0, 0), (-1, -1), 0.5, LINE),
-    ]))
+    kpi_grid.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 1),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 9),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
+                ("LINEABOVE", (0, 0), (-1, 0), 0.6, LINE),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.5, LINE),
+            ]
+        )
+    )
     # Numery sekcji liczone w locie. Wpisane na sztywno gubily ciaglosc: sekcje sa
     # warunkowe, wiec przy braku danych organicznych raport skakal z "06" na "08"
     # i czytelnik szukal brakujacej sekcji siodmej.
@@ -514,9 +599,13 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
             bg.append(col)
         if cells:
             bar = Table([cells], colWidths=widths, rowHeights=[9 * mm])
-            bst = [("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                   ("LEFTPADDING", (0, 0), (-1, -1), 5), ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                   ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]
+            bst = [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
             for i, col in enumerate(bg):
                 bst.append(("BACKGROUND", (i, 0), (i, 0), col))
             bar.setStyle(TableStyle(bst))
@@ -524,99 +613,142 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
             def _seg_line(key, s):
                 if not s:
                     return "-"
-                return (f'{int_num(s["orders"])} zam.  ·  {money_num(s["revenue"])} zł netto')
+                return f"{int_num(s['orders'])} zam.  ·  {money_num(s['revenue'])} zł netto"
+
             b2b_txt = f'<font color="#4F46E5"><b>■</b></font> <b>B2B (firmy)</b> - {_seg_line("B2B", b2b)}'
             b2c_txt = f'<font color="#A5B4FC"><b>■</b></font> <b>B2C (osoby)</b> - {_seg_line("B2C", b2c)}'
             legend = Table(
                 [[Paragraph(b2b_txt, S["small"]), Paragraph(b2c_txt, S["small"])]],
                 colWidths=[CONTENT_W / 2, CONTENT_W / 2],
             )
-            legend.setStyle(TableStyle([
-                ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
-            story += [Spacer(1, 7 * mm),
-                      KeepTogether([SectionHeader(nr(), "Segmentacja B2B / B2C"), bar, legend])]
+            legend.setStyle(
+                TableStyle(
+                    [
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
+            story += [Spacer(1, 7 * mm), KeepTogether([SectionHeader(nr(), "Segmentacja B2B / B2C"), bar, legend])]
 
     # ================= 03 · Lejek =================
-    stages = [("Wyświetlenia", fn["impressions"]), ("Kliknięcia", fn["clicks"]),
-              ("Sesje", fn["sessions"]), ("Zamówienia", fn["orders"])]
+    stages = [
+        ("Wyświetlenia", fn["impressions"]),
+        ("Kliknięcia", fn["clicks"]),
+        ("Sesje", fn["sessions"]),
+        ("Zamówienia", fn["orders"]),
+    ]
     maxv = max((v for _, v in stages), default=0) or 1
     frows = []
     for i, (name, v) in enumerate(stages):
-        frows.append([
-            Paragraph(name, S["cell"]),
-            bar_cell(v / maxv, 106, 7, FUNNEL_SHADES[i]),
-            _p(int_num(v), 9.5, INK, bold=True, align=2),
-        ])
+        frows.append(
+            [
+                Paragraph(name, S["cell"]),
+                bar_cell(v / maxv, 106, 7, FUNNEL_SHADES[i]),
+                _p(int_num(v), 9.5, INK, bold=True, align=2),
+            ]
+        )
     funnel_bars = Table(frows, colWidths=[30 * mm, 110 * mm, 30 * mm])
-    funnel_bars.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (0, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
+    funnel_bars.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (0, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
 
     def _metric_strip(pairs):
         row = []
         for k, v in pairs:
-            row.append([
-                _p(k.upper(), 6.8, MUTED, align=1, leading=8.5),
-                _p(v, 9, INK, bold=True, align=1, leading=12),
-            ])
+            row.append(
+                [
+                    _p(k.upper(), 6.8, MUTED, align=1, leading=8.5),
+                    _p(v, 9, INK, bold=True, align=1, leading=12),
+                ]
+            )
         n = len(pairs)
         t = Table([row], colWidths=[CONTENT_W / n] * n)
-        t.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("LEFTPADDING", (0, 0), (-1, -1), 3), ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-            ("LINEABOVE", (0, 0), (-1, 0), 0.5, LINE),
-            ("LINEAFTER", (0, 0), (-2, -1), 0.4, LINE),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                    ("LINEABOVE", (0, 0), (-1, 0), 0.5, LINE),
+                    ("LINEAFTER", (0, 0), (-2, -1), 0.4, LINE),
+                ]
+            )
+        )
         return t
 
-    metrics = _metric_strip([
-        ("CTR", ratio_pct(fn["ctr"])),
-        ("Sesja→zam.", ratio_pct(fn["cr_session_order"])),
-        ("CPC", (money_num(fn["cpc"]) + " zł") if fn["cpc"] else "-"),
-        ("CPO", (money_num(fn["cpo"]) + " zł") if fn["cpo"] else "-"),
-        ("ROAS płatne", (roas_num(fn["roas"]) + "×") if fn["roas"] is not None else "-"),
-        ("Wydatki", money_num(fn["spend"]) + " zł"),
-    ])
-    story += [Spacer(1, 7 * mm),
-              KeepTogether([SectionHeader(nr(), "Lejek konwersji"),
-                            funnel_bars, Spacer(1, 2 * mm), metrics])]
+    metrics = _metric_strip(
+        [
+            ("CTR", ratio_pct(fn["ctr"])),
+            ("Sesja→zam.", ratio_pct(fn["cr_session_order"])),
+            ("CPC", (money_num(fn["cpc"]) + " zł") if fn["cpc"] else "-"),
+            ("CPO", (money_num(fn["cpo"]) + " zł") if fn["cpo"] else "-"),
+            ("ROAS płatne", (roas_num(fn["roas"]) + "×") if fn["roas"] is not None else "-"),
+            ("Wydatki", money_num(fn["spend"]) + " zł"),
+        ]
+    )
+    story += [
+        Spacer(1, 7 * mm),
+        KeepTogether([SectionHeader(nr(), "Lejek konwersji"), funnel_bars, Spacer(1, 2 * mm), metrics]),
+    ]
 
     # ================= 04 · Kanały =================
     if channels:
-        chart_items = [{"label": channel_label(c), "rev": c["revenue_net"],
-                        "code": c["channel_code"], "roas": c["roas"]} for c in channels if c["revenue_net"]]
+        chart_items = [
+            {"label": channel_label(c), "rev": c["revenue_net"], "code": c["channel_code"], "roas": c["roas"]}
+            for c in channels
+            if c["revenue_net"]
+        ]
         naglowek = SectionHeader(nr(), "Kanały pozyskania")
         blocks = [naglowek]
         if chart_items:
+
             def _roas_dot(it):
                 r = it.get("roas")
                 if r is None:
                     return None
                 return OK if r >= 3 else (DANGER if r < 1 else OFFLINE)
+
             # Nagłówek + podpis + wykres + legenda jako JEDEN blok (jak sekcje 02 i 03).
             # Sam `keepWithNext` przyklejał nagłówek tylko do podpisu, a wykres i tak
             # przechodził na następną stronę - zostawał pusty tytuł na dole strony.
             blocks = [
-                KeepTogether([
-                    naglowek,
-                    Paragraph("Przychód netto wg kanału", S["small"]),
-                    Spacer(1, 1.5 * mm),
-                    HBarChart(chart_items, "rev", "label",
-                              color_fn=lambda it: channel_color(it["code"]),
-                              fmt_fn=lambda v: money_num(v) + " zł",
-                              dot_fn=_roas_dot),
-                    Spacer(1, 1 * mm),
-                    Paragraph('Kropka przy wartości = próg ROAS: '
-                              '<font color="#16A34A">●</font> ≥3 · '
-                              '<font color="#64748B">●</font> 1-3 · '
-                              '<font color="#DC2626">●</font> &lt;1', S["small"]),
-                ]),
+                KeepTogether(
+                    [
+                        naglowek,
+                        Paragraph("Przychód netto wg kanału", S["small"]),
+                        Spacer(1, 1.5 * mm),
+                        HBarChart(
+                            chart_items,
+                            "rev",
+                            "label",
+                            color_fn=lambda it: channel_color(it["code"]),
+                            fmt_fn=lambda v: money_num(v) + " zł",
+                            dot_fn=_roas_dot,
+                        ),
+                        Spacer(1, 1 * mm),
+                        Paragraph(
+                            "Kropka przy wartości = próg ROAS: "
+                            '<font color="#16A34A">●</font> ≥3 · '
+                            '<font color="#64748B">●</font> 1-3 · '
+                            '<font color="#DC2626">●</font> &lt;1',
+                            S["small"],
+                        ),
+                    ]
+                ),
                 Spacer(1, 3 * mm),
             ]
         # tabela
@@ -624,13 +756,21 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
         rows = []
         for c in channels:
             dot = "#" + channel_color(c["channel_code"]).hexval()[2:]
-            rows.append([
-                Paragraph(f'<font color="{dot}">●</font>&nbsp; {esc(channel_label(c))}', S["cell"]),
-                money_num(c["spend"]) + " zł", int_num(c["sessions"]), int_num(c["orders"]),
-                money_num(c["revenue_net"]) + " zł", (roas_num(c["roas"]) + "×" if c["roas"] is not None else "-"),
-            ])
-        blocks.append(_data_table(head, rows, [0, 1, 1, 1, 1, 1],
-                                  col_w=[48 * mm, 24 * mm, 22 * mm, 18 * mm, 30 * mm, 28 * mm], S=S))
+            rows.append(
+                [
+                    Paragraph(f'<font color="{dot}">●</font>&nbsp; {esc(channel_label(c))}', S["cell"]),
+                    money_num(c["spend"]) + " zł",
+                    int_num(c["sessions"]),
+                    int_num(c["orders"]),
+                    money_num(c["revenue_net"]) + " zł",
+                    (roas_num(c["roas"]) + "×" if c["roas"] is not None else "-"),
+                ]
+            )
+        blocks.append(
+            _data_table(
+                head, rows, [0, 1, 1, 1, 1, 1], col_w=[48 * mm, 24 * mm, 22 * mm, 18 * mm, 30 * mm, 28 * mm], S=S
+            )
+        )
         story += [Spacer(1, 7 * mm)] + blocks
 
     # ================= 05 · Formaty =================
@@ -640,22 +780,30 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
         rows = []
         for f in formats:
             eng = f["engagement"]
-            eng_cell = [bar_cell(eng / maxeng, 22, 3.2, ORGANIC), Spacer(1, 0.6 * mm),
-                        _p(int_num(eng), 8, INK, bold=True)] if eng else Paragraph("-", S["cell"])
+            eng_cell = (
+                [bar_cell(eng / maxeng, 22, 3.2, ORGANIC), Spacer(1, 0.6 * mm), _p(int_num(eng), 8, INK, bold=True)]
+                if eng
+                else Paragraph("-", S["cell"])
+            )
             # Źródłem prawdy jest kolumna `kind` z analytics.v_ad_format_stats ('platny'/'organiczny')
             # - tak samo klasyfikuje panel. Lista platform to tylko fallback, gdy kind jest puste.
             plat = str(f["platform"]).lower()
             kind = str(f.get("kind", "")).strip().lower()
             is_paid = kind == "platny" if kind else plat in ("meta_ads", "google_ads")
-            rows.append([
-                humanize(f["platform"]), humanize(f["format"]),
-                "Płatny" if is_paid else "Organiczny",
-                ratio_pct(f["ctr"]) if f["ctr"] else "-",
-                eng_cell,
-            ])
-        story += [Spacer(1, 7 * mm), SectionHeader(nr(), "Ranking formatów reklamowych"),
-                  _data_table(head, rows, [0, 0, 0, 1, 0],
-                              col_w=[38 * mm, 30 * mm, 26 * mm, 28 * mm, 48 * mm], S=S)]
+            rows.append(
+                [
+                    humanize(f["platform"]),
+                    humanize(f["format"]),
+                    "Płatny" if is_paid else "Organiczny",
+                    ratio_pct(f["ctr"]) if f["ctr"] else "-",
+                    eng_cell,
+                ]
+            )
+        story += [
+            Spacer(1, 7 * mm),
+            SectionHeader(nr(), "Ranking formatów reklamowych"),
+            _data_table(head, rows, [0, 0, 0, 1, 0], col_w=[38 * mm, 30 * mm, 26 * mm, 28 * mm, 48 * mm], S=S),
+        ]
 
     # ================= 06 · Produkty =================
     if products:
@@ -663,19 +811,31 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
         prows = []
         for p in products:
             rev = float(p["rev"] or 0)
-            prows.append([
-                Paragraph(esc(p["product_name"]), S["cell"]),
-                bar_cell(rev / maxrev, 56, 6, PRIMARY),
-                _p(f'<b>{money_num(rev)} zł</b> <font color="#64646E" size="8">· {qty_num(p["qty"])} szt.</font>',
-                   9, INK, align=2),
-            ])
+            prows.append(
+                [
+                    Paragraph(esc(p["product_name"]), S["cell"]),
+                    bar_cell(rev / maxrev, 56, 6, PRIMARY),
+                    _p(
+                        f'<b>{money_num(rev)} zł</b> <font color="#64646E" size="8">· {qty_num(p["qty"])} szt.</font>',
+                        9,
+                        INK,
+                        align=2,
+                    ),
+                ]
+            )
         ptable = Table(prows, colWidths=[64 * mm, 58 * mm, 48 * mm])
-        ptable.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LINEBELOW", (0, 0), (-1, -2), 0.4, LINE),
-        ]))
+        ptable.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LINEBELOW", (0, 0), (-1, -2), 0.4, LINE),
+                ]
+            )
+        )
         story += [Spacer(1, 7 * mm), SectionHeader(nr(), "Najlepsze produkty"), ptable]
 
     # ================= 07 · Organiczne (opcjonalnie) =================
@@ -685,15 +845,24 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
         head = ["Typ posta", "Posty", "Wyświetlenia", "Zaangażowanie", "Wsk. zaang."]
         rows = []
         for t in ot:
-            rows.append([
-                humanize(t["post_type"]), int_num(t["posts"]), int_num(t["views"]),
-                [bar_cell(t["engagement"] / maxeng, 24, 3.2, ORGANIC), Spacer(1, 0.6 * mm),
-                 _p(int_num(t["engagement"]), 8, INK, bold=True)],
-                ratio_pct(t["engagement_rate"]),
-            ])
-        story += [Spacer(1, 7 * mm), SectionHeader(nr(), "Zaangażowanie organiczne"),
-                  _data_table(head, rows, [0, 1, 1, 0, 1],
-                              col_w=[38 * mm, 22 * mm, 32 * mm, 44 * mm, 34 * mm], S=S)]
+            rows.append(
+                [
+                    humanize(t["post_type"]),
+                    int_num(t["posts"]),
+                    int_num(t["views"]),
+                    [
+                        bar_cell(t["engagement"] / maxeng, 24, 3.2, ORGANIC),
+                        Spacer(1, 0.6 * mm),
+                        _p(int_num(t["engagement"]), 8, INK, bold=True),
+                    ],
+                    ratio_pct(t["engagement_rate"]),
+                ]
+            )
+        story += [
+            Spacer(1, 7 * mm),
+            SectionHeader(nr(), "Zaangażowanie organiczne"),
+            _data_table(head, rows, [0, 1, 1, 0, 1], col_w=[38 * mm, 22 * mm, 32 * mm, 44 * mm, 34 * mm], S=S),
+        ]
 
     # ================= 08 · Zestawienie tygodniowe =================
     if weekly:
@@ -706,8 +875,11 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
         headline = polonize_decimals(humanize_text(headline))
         wk_range = fmt_week(w["week_start"], w["week_end"])
         inner = [
-            Paragraph(f'<font name="{BOLD}" size="7.5" color="#4F46E5">PODSUMOWANIE TYGODNIA</font>'
-                      f'&nbsp;&nbsp;<font size="8" color="#64646E">{wk_range}</font>', S["small"]),
+            Paragraph(
+                f'<font name="{BOLD}" size="7.5" color="#4F46E5">PODSUMOWANIE TYGODNIA</font>'
+                f'&nbsp;&nbsp;<font size="8" color="#64646E">{wk_range}</font>',
+                S["small"],
+            ),
             Spacer(1, 1.5 * mm),
             Paragraph(esc(headline), S["wk_head"]),
             Spacer(1, 2 * mm),
@@ -719,16 +891,23 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
             bullet = f'<font color="#4F46E5">■</font>&nbsp; {esc(polonize_decimals(humanize_text(ln)))}'
             inner.append(Paragraph(bullet, S["wk_body"]))
         callout = Table([["", inner]], colWidths=[3 * mm, CONTENT_W - 3 * mm])
-        callout.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, 0), PRIMARY),
-            ("BACKGROUND", (1, 0), (1, 0), BG2),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (1, 0), (1, 0), 7), ("RIGHTPADDING", (1, 0), (1, 0), 7),
-            ("TOPPADDING", (1, 0), (1, 0), 6), ("BOTTOMPADDING", (1, 0), (1, 0), 6),
-            ("LEFTPADDING", (0, 0), (0, 0), 0), ("RIGHTPADDING", (0, 0), (0, 0), 0),
-            ("ROUNDEDCORNERS", [3, 3, 3, 3]),
-            ("BOX", (0, 0), (-1, -1), 0.5, LINE),
-        ]))
+        callout.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), PRIMARY),
+                    ("BACKGROUND", (1, 0), (1, 0), BG2),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (1, 0), (1, 0), 7),
+                    ("RIGHTPADDING", (1, 0), (1, 0), 7),
+                    ("TOPPADDING", (1, 0), (1, 0), 6),
+                    ("BOTTOMPADDING", (1, 0), (1, 0), 6),
+                    ("LEFTPADDING", (0, 0), (0, 0), 0),
+                    ("RIGHTPADDING", (0, 0), (0, 0), 0),
+                    ("ROUNDEDCORNERS", [3, 3, 3, 3]),
+                    ("BOX", (0, 0), (-1, -1), 0.5, LINE),
+                ]
+            )
+        )
         story += [Spacer(1, 7 * mm), SectionHeader(nr(), "Zestawienie tygodniowe"), callout]
 
     # ---- chrome ----
@@ -796,14 +975,23 @@ def build_report_pdf(db: DBSession, date_from: date, date_to: date) -> bytes:
         _footer(canvas, doc)
 
     buf = io.BytesIO()
-    doc = BaseDocTemplate(buf, pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm,
-                          topMargin=20 * mm, bottomMargin=18 * mm, title="Raport sprzedaży i marketingu")
+    doc = BaseDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=20 * mm,
+        rightMargin=20 * mm,
+        topMargin=20 * mm,
+        bottomMargin=18 * mm,
+        title="Raport sprzedaży i marketingu",
+    )
     cover_frame = Frame(20 * mm, 18 * mm, CONTENT_W, A4[1] - 62 * mm - 18 * mm, id="cover")
     later_frame = Frame(20 * mm, 18 * mm, CONTENT_W, A4[1] - 22 * mm - 18 * mm, id="later")
-    doc.addPageTemplates([
-        PageTemplate(id="cover", frames=[cover_frame], onPage=_cover),
-        PageTemplate(id="later", frames=[later_frame], onPage=_running),
-    ])
+    doc.addPageTemplates(
+        [
+            PageTemplate(id="cover", frames=[cover_frame], onPage=_cover),
+            PageTemplate(id="later", frames=[later_frame], onPage=_running),
+        ]
+    )
     doc.build(story, canvasmaker=NumberedCanvas)
     return buf.getvalue()
 
@@ -828,8 +1016,10 @@ def _data_table(headers, rows, aligns, col_w, S):
         ("LINEBELOW", (0, 0), (-1, 0), 0.6, LINE),
         ("LINEBELOW", (0, 1), (-1, -2), 0.4, LINE),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 4.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 4.5),
-        ("LEFTPADDING", (0, 0), (-1, -1), 5), ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 4.5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4.5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
     ]
     if len(body) >= 6:
         st.append(("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, BG2]))

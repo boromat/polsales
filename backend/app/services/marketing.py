@@ -107,9 +107,7 @@ def channel_summary(db: DBSession, date_from: date, date_to: date) -> list[dict]
 def marketing_kpi(db: DBSession, date_from: date, date_to: date) -> dict:
     """CAC i ROAS zbiorczy dla dashboardu (z danych integracji, jeśli są)."""
     spend = db.execute(
-        text(
-            "SELECT COALESCE(sum(spend),0) FROM analytics.v_marketing_daily WHERE date BETWEEN :df AND :dt"
-        ),
+        text("SELECT COALESCE(sum(spend),0) FROM analytics.v_marketing_daily WHERE date BETWEEN :df AND :dt"),
         {"df": date_from, "dt": date_to},
     ).scalar()
     spend = float(spend or 0)
@@ -154,47 +152,70 @@ def marketing_kpi(db: DBSession, date_from: date, date_to: date) -> dict:
 
 def ad_format_ranking(db: DBSession, date_from: date, date_to: date) -> list[dict]:
     """Ranking formatów reklamowych (płatne: CTR; organiczne: zaangażowanie na wyświetlenie)."""
-    rows = db.execute(
-        text(
-            """SELECT platform, kind, format,
+    rows = (
+        db.execute(
+            text(
+                """SELECT platform, kind, format,
                       sum(impressions) impressions, sum(clicks) clicks, sum(spend) spend,
                       sum(views) views, sum(engagement) engagement
                FROM analytics.v_ad_format_stats WHERE date BETWEEN :df AND :dt
                GROUP BY platform, kind, format
                ORDER BY (sum(spend) + sum(views)) DESC"""
-        ),
-        {"df": date_from, "dt": date_to},
-    ).mappings().all()
+            ),
+            {"df": date_from, "dt": date_to},
+        )
+        .mappings()
+        .all()
+    )
     out = []
     for r in rows:
         imp, clk, views, eng = int(r["impressions"]), int(r["clicks"]), int(r["views"]), int(r["engagement"])
-        out.append({
-            "platform": r["platform"], "kind": r["kind"], "format": r["format"],
-            "impressions": imp, "clicks": clk, "spend": round(float(r["spend"]), 2),
-            "views": views, "engagement": eng,
-            "ctr": _ratio(clk, imp),
-            "engagement_rate": _ratio(eng, views),
-        })
+        out.append(
+            {
+                "platform": r["platform"],
+                "kind": r["kind"],
+                "format": r["format"],
+                "impressions": imp,
+                "clicks": clk,
+                "spend": round(float(r["spend"]), 2),
+                "views": views,
+                "engagement": eng,
+                "ctr": _ratio(clk, imp),
+                "engagement_rate": _ratio(eng, views),
+            }
+        )
     return out
 
 
 def organic_engagement(db: DBSession, date_from: date, date_to: date) -> dict:
     """Zaangażowanie organiczne (wyświetlenia + reakcje) wg typu posta + sumy."""
-    rows = db.execute(
-        text(
-            """SELECT post_type, sum(posts) posts, sum(views) views, sum(reach) reach,
+    rows = (
+        db.execute(
+            text(
+                """SELECT post_type, sum(posts) posts, sum(views) views, sum(reach) reach,
                       sum(likes) likes, sum(comments) comments, sum(shares) shares,
                       sum(link_clicks) link_clicks, sum(engagement) engagement
                FROM analytics.v_organic_engagement WHERE date BETWEEN :df AND :dt
                GROUP BY post_type ORDER BY sum(engagement) DESC"""
-        ),
-        {"df": date_from, "dt": date_to},
-    ).mappings().all()
+            ),
+            {"df": date_from, "dt": date_to},
+        )
+        .mappings()
+        .all()
+    )
     by_type = [
-        {"post_type": r["post_type"], "posts": int(r["posts"]), "views": int(r["views"]),
-         "reach": int(r["reach"]), "likes": int(r["likes"]), "comments": int(r["comments"]),
-         "shares": int(r["shares"]), "link_clicks": int(r["link_clicks"]),
-         "engagement": int(r["engagement"]), "engagement_rate": _ratio(int(r["engagement"]), int(r["views"]))}
+        {
+            "post_type": r["post_type"],
+            "posts": int(r["posts"]),
+            "views": int(r["views"]),
+            "reach": int(r["reach"]),
+            "likes": int(r["likes"]),
+            "comments": int(r["comments"]),
+            "shares": int(r["shares"]),
+            "link_clicks": int(r["link_clicks"]),
+            "engagement": int(r["engagement"]),
+            "engagement_rate": _ratio(int(r["engagement"]), int(r["views"])),
+        }
         for r in rows
     ]
     _sum_keys = ("posts", "views", "reach", "likes", "comments", "shares", "link_clicks", "engagement")
@@ -205,16 +226,24 @@ def organic_engagement(db: DBSession, date_from: date, date_to: date) -> dict:
 
 def email_product_trends(db: DBSession, date_from: date, date_to: date) -> list[dict]:
     """Trendy produktów wspominanych w mailach (ze szkiców) - sygnał popytu przed zamówieniem."""
-    rows = db.execute(
-        text(
-            """SELECT product, sum(mentions) mentions, sum(quantity) quantity, count(DISTINCT date) days
+    rows = (
+        db.execute(
+            text(
+                """SELECT product, sum(mentions) mentions, sum(quantity) quantity, count(DISTINCT date) days
                FROM analytics.v_email_product_trends WHERE date BETWEEN :df AND :dt
                GROUP BY product ORDER BY sum(mentions) DESC, sum(quantity) DESC LIMIT 20"""
-        ),
-        {"df": date_from, "dt": date_to},
-    ).mappings().all()
+            ),
+            {"df": date_from, "dt": date_to},
+        )
+        .mappings()
+        .all()
+    )
     return [
-        {"product": r["product"], "mentions": int(r["mentions"]),
-         "quantity": float(r["quantity"] or 0), "days": int(r["days"])}
+        {
+            "product": r["product"],
+            "mentions": int(r["mentions"]),
+            "quantity": float(r["quantity"] or 0),
+            "days": int(r["days"]),
+        }
         for r in rows
     ]

@@ -48,9 +48,7 @@ def strony() -> list[list[tuple[float, str]]]:
 
 
 def test_numeracja_sekcji_bez_dziur(strony):
-    numery = [
-        int(m.group(1)) for strona in strony for _, tekst in strona for m in NAGLOWEK.finditer(tekst)
-    ]
+    numery = [int(m.group(1)) for strona in strony for _, tekst in strona for m in NAGLOWEK.finditer(tekst)]
     assert numery, "raport nie ma ani jednej sekcji"
     assert numery == list(range(1, len(numery) + 1)), f"numeracja z dziurą: {numery}"
 
@@ -61,6 +59,4 @@ def test_naglowek_nie_zostaje_sam_na_koncu_strony(strony):
             continue
         _, ostatni = strona[-1]
         # Nagłówek sekcji w warstwie tekstowej to „07\nZestawienie tygodniowe".
-        assert not NAGLOWEK.match(ostatni), (
-            f"strona {i} kończy się samym nagłówkiem sekcji: {ostatni!r}"
-        )
+        assert not NAGLOWEK.match(ostatni), f"strona {i} kończy się samym nagłówkiem sekcji: {ostatni!r}"

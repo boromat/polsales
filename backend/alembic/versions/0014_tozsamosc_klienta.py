@@ -33,9 +33,7 @@ branch_labels = None
 depends_on = None
 
 # Telefon: zostawiamy same cyfry i bierzemy 9 ostatnich (format PL); krotsze traktujemy jako brak.
-_TELEFON = (
-    "NULLIF(right(regexp_replace(COALESCE(ct.phone, ''), '[^0-9]', '', 'g'), 9), '')"
-)
+_TELEFON = "NULLIF(right(regexp_replace(COALESCE(ct.phone, ''), '[^0-9]', '', 'g'), 9), '')"
 _MAIL = "NULLIF(btrim(lower(ct.email::text)), '')"
 
 _KLUCZ_NOWY = f"""COALESCE(

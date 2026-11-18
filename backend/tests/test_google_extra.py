@@ -34,8 +34,10 @@ def no_google(monkeypatch):
 @pytest.fixture()
 def google_configured(monkeypatch):
     for key, value in {
-        "ga4_service_account_json": '{"type": "service_account"}', "ga4_property_id": "123456789",
-        "google_ads_developer_token": "dev-token-test", "google_ads_customer_id": "1234567890",
+        "ga4_service_account_json": '{"type": "service_account"}',
+        "ga4_property_id": "123456789",
+        "google_ads_developer_token": "dev-token-test",
+        "google_ads_customer_id": "1234567890",
     }.items():
         monkeypatch.setattr(settings, key, value)
 
@@ -53,7 +55,8 @@ def db():
 
 @pytest.mark.parametrize("source", ["ga4", "google_ads"])
 def test_configured_integration_without_packages_reports_how_to_install(
-        source, no_google, google_configured, db, auth_client):
+    source, no_google, google_configured, db, auth_client
+):
     result = marketing_sync.run_sync(db, source)
 
     assert result["status"] == "error"
@@ -71,8 +74,7 @@ def test_configured_integration_without_packages_reports_how_to_install(
 @pytest.mark.parametrize("source", ["ga4", "google_ads"])
 def test_unconfigured_integration_needs_no_package(source, no_google, db, monkeypatch):
     """A default install without the extra and without credentials stays quiet (no red alert)."""
-    for key in ("ga4_service_account_json", "ga4_property_id", "google_ads_developer_token",
-                "google_ads_customer_id"):
+    for key in ("ga4_service_account_json", "ga4_property_id", "google_ads_developer_token", "google_ads_customer_id"):
         monkeypatch.setattr(settings, key, "")
     assert marketing_sync.run_sync(db, source)["status"] == "skipped"
 

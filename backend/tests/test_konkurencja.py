@@ -68,7 +68,7 @@ def _post(db, pid: int, lajki: int, typ: str = "reel", dni_temu: int = 5) -> Non
         ([], None),
         ([5], 5),
         ([1, 2, 3], 2),
-        ([1, 2, 3, 4], 2.5),          # parzysta liczba - średnia dwóch środkowych
+        ([1, 2, 3, 4], 2.5),  # parzysta liczba - średnia dwóch środkowych
         ([10, 10, 10, 10, 10000], 10),  # viral NIE rusza mediany
     ],
 )
