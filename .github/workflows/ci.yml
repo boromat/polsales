@@ -24,6 +24,9 @@ jobs:
             python: "3.12"
           - os: windows-latest
             python: "3.13"
+          # The Python of backend/Dockerfile.
+          - os: ubuntu-latest
+            python: "3.14"
     env:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/polsales
       SESSION_SECRET: ci-secret

@@ -129,7 +129,7 @@ dostaje flagę `Secure`, a aplikacja odmawia startu z domyślnymi sekretami.
 
 ### Lokalnie
 
-Wymagania: Python 3.10+, Node 22.12+ (CI i Docker: Node 26 LTS), PostgreSQL 16.
+Wymagania: Python 3.10+ (Docker: 3.14, CI: 3.12, 3.13 i 3.14), Node 22.12+ (CI i Docker: Node 26 LTS), PostgreSQL 16.
 
 ```bash
 cd backend
