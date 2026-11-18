@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import cast
 
-from sqlalchemy import select, text
+from sqlalchemy import Table, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session as DBSession
 
@@ -52,7 +53,7 @@ def resolve_company_by_nip(db: DBSession, raw_nip: str | None, fallback_name: st
     company = db.scalar(select(Company).where(Company.nip == nip))
     if company is None:
         db.execute(
-            pg_insert(Company.__table__)
+            pg_insert(cast(Table, Company.__table__))
             .values(nip=nip, name=fallback_name or f"Firma NIP {nip}")
             .on_conflict_do_nothing(index_elements=[Company.nip])
         )
@@ -165,7 +166,8 @@ def create_order(
         vat = it.get("vat_rate")
         if vat is None:
             # Zamroź stawkę z produktu, jeśli podano product_id, inaczej domyślną.
-            vat = float(db.get(VatRate, product.vat_rate_id).rate) if product else fallback_vat
+            # vat_rate_id jest NOT NULL z kluczem obcym, więc stawka zawsze istnieje.
+            vat = float(db.get_one(VatRate, product.vat_rate_id).rate) if product else fallback_vat
         db.add(
             OrderItem(
                 order_id=order.id,

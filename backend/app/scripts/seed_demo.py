@@ -39,8 +39,9 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import date, timedelta
+from typing import cast
 
-from sqlalchemy import text
+from sqlalchemy import CursorResult, text
 
 from app.db.base import SessionLocal
 
@@ -279,6 +280,7 @@ SZKICE = [
 
 def _wstaw_slowniki(db) -> None:
     """Produkty, firmy i kontakty - podstawa, do której dowiązują się zamówienia."""
+    nip: str | None  # firma ma NIP zawsze, kontakt klienta indywidualnego nie
     for sku, nazwa, cena, koszt in PRODUKTY:
         db.execute(
             text("""
@@ -617,7 +619,8 @@ def seed() -> dict:
 def usun() -> dict:
     db = SessionLocal()
     try:
-        wynik = {nazwa: db.execute(text(sql)).rowcount for nazwa, sql in USUN}
+        # DELETE zwraca CursorResult, który zna liczbę usuniętych wierszy.
+        wynik = {nazwa: cast(CursorResult, db.execute(text(sql))).rowcount for nazwa, sql in USUN}
         db.commit()
         return wynik
     finally:

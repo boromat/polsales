@@ -23,7 +23,7 @@ def _ratio(num, den):
 def funnel(db: DBSession, date_from: date, date_to: date, channel: str = "all") -> dict:
     """Lejek za okres: wyświetlenia → kliknięcia → sesje → zamówienia + wskaźniki przejścia."""
     where = "WHERE date BETWEEN :df AND :dt"
-    params = {"df": date_from, "dt": date_to}
+    params: dict[str, object] = {"df": date_from, "dt": date_to}
     if channel != "all":
         where += " AND channel_code = :ch"
         params["ch"] = channel

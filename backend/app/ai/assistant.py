@@ -383,7 +383,8 @@ def _loop(
         if not tools_checked:
             tool_session = _resolve_tool_session(tool_db)
             tools_checked = True
-        results_for_model, results_for_db = [], []
+        results_for_model: list[dict] = []
+        results_for_db: list[dict] = []
         for block in final.content:
             if getattr(block, "type", None) != "tool_use":
                 continue

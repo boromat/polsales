@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from typing import Any
 
 from app.config import settings
 
@@ -79,7 +80,7 @@ def build_client():
     # Jawny budżet czasu. Domyślnie SDK czeka 600 s na żądanie i ponawia 2× (~30 min),
     # a wywołania AI biegną w środku otwartej transakcji (parser maili w pętli IMAP):
     # incydent u dostawcy potrafiłby zablokować pobieranie poczty na pół godziny.
-    limity = {"timeout": settings.ai_timeout_seconds, "max_retries": settings.ai_max_retries}
+    limity: dict[str, Any] = {"timeout": settings.ai_timeout_seconds, "max_retries": settings.ai_max_retries}
 
     if using_openrouter():
         return anthropic.Anthropic(
@@ -90,7 +91,7 @@ def build_client():
             **limity,
         )
     if settings.anthropic_api_key:
-        kwargs = {"api_key": settings.anthropic_api_key, **limity}
+        kwargs: dict[str, Any] = {"api_key": settings.anthropic_api_key, **limity}
         if settings.ai_base_url:
             kwargs["base_url"] = settings.ai_base_url
         return anthropic.Anthropic(**kwargs)

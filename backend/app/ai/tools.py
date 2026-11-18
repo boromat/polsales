@@ -264,7 +264,7 @@ def _count_new_customers(db: DBSession, df: date, dt: date, channel: str, segmen
     """Nowi klienci first-touch w oknie [df, dt], z filtrem kanału (acq_channel) i segmentu (decyzja #6)."""
     cte = _first_touch_cte(segment)
     ch = "" if channel == "all" else " AND acq_channel = :ch"
-    params = {"df": df, "dt": dt}
+    params: dict[str, object] = {"df": df, "dt": dt}
     if channel != "all":
         params["ch"] = channel
     return int(
@@ -279,7 +279,7 @@ def _count_new_customers(db: DBSession, df: date, dt: date, channel: str, segmen
 def _metrics_total(db: DBSession, df: date, dt: date, channel: str, segment: str) -> dict:
     ch_clause = "" if channel == "all" else " AND attribution_channel = :ch"
     seg = _segment_clause(segment, "v")
-    params = {"df": df, "dt": dt}
+    params: dict[str, object] = {"df": df, "dt": dt}
     if channel != "all":
         params["ch"] = channel
 
@@ -294,7 +294,7 @@ def _metrics_total(db: DBSession, df: date, dt: date, channel: str, segment: str
     ).one()
     rev, cnt = float(order_row.rev), int(order_row.cnt)
 
-    fparams = {"df": df, "dt": dt}
+    fparams: dict[str, object] = {"df": df, "dt": dt}
     fch = "" if channel == "all" else " AND channel_code = :ch"
     if channel != "all":
         fparams["ch"] = channel
@@ -366,7 +366,7 @@ def _metrics_series(
             bexpr = "order_date"
         ch_clause = "" if channel == "all" else " AND attribution_channel = :ch"
         seg = _segment_clause(segment, "v")
-        params = {"df": df, "dt": dt}
+        params: dict[str, object] = {"df": df, "dt": dt}
         if channel != "all":
             params["ch"] = channel
         rows = db.execute(
@@ -418,7 +418,7 @@ def _metrics_series(
     if mkt_wanted:
         bexpr = "date_trunc('month', date)::date" if granularity == "month" else "date"
         fch = "" if channel == "all" else " AND channel_code = :ch"
-        fparams = {"df": df, "dt": dt}
+        fparams: dict[str, object] = {"df": df, "dt": dt}
         if channel != "all":
             fparams["ch"] = channel
         rows = db.execute(

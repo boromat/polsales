@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session as DBSession
 
 from app.config import settings
+from app.db.models.core import Order
 from app.db.models.drafts import OrderDraft, OrderDraftItem
 from app.db.models.enums import AttributionMethod, OrderSource, OrderStatus
 from app.db.models.mail import Email
@@ -144,7 +145,7 @@ def _pierwszy_kontakt(db: DBSession, email: Email | None, klient: str | None) ->
     return min(znane) if znane else None
 
 
-def approve_draft(db: DBSession, draft: OrderDraft, payload: dict) -> object:
+def approve_draft(db: DBSession, draft: OrderDraft, payload: dict) -> Order:
     """Tworzy zamówienie z ZWERYFIKOWANYCH danych z panelu, uczy aliasy, oznacza szkic i mail.
 
     payload: {source, nip, company_name, contact_*, attribution_channel_id, notes,

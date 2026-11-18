@@ -146,7 +146,7 @@ def login(
         ok = False
     else:
         ok = verify_password(data.password, user.password_hash)
-    if not ok:
+    if not ok or user is None:
         _record_attempt(key)
         _hit(_ip_failures, bucket, now)
         if user is not None:
