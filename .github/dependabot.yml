@@ -1,0 +1,19 @@
+# Keeps the workflow actions and the Docker base images current. The actions are pinned to a
+# commit, with the release in a comment, so a moved tag cannot change what runs; Dependabot updates
+# both. The Python and npm dependencies are left out on purpose: pyproject.toml and package.json
+# pin lower bounds or ranges, and Dependabot's vulnerability alerts cover the versions in use.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # Every action update in one pull request, rather than one pull request per action.
+    groups:
+      actions:
+        patterns: ["*"]
+  # backend/Dockerfile (python) and frontend/Dockerfile (node, then caddy).
+  - package-ecosystem: docker
+    directories: ["/backend", "/frontend"]
+    schedule:
+      interval: monthly
