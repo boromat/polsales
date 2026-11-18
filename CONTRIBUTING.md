@@ -79,3 +79,12 @@ Masking of personal data before an AI call is done by
 polanon: report it there, with invented text of the same shape. A way into the panel without
 logging in, past the read-only role, around the data tags, or for personal data to reach the
 model while masking is on is a security report: see `SECURITY.md`, never a public issue.
+
+## Releases
+
+The version is written in `backend/pyproject.toml`, `backend/app/main.py` (the number the API
+reports), `frontend/package.json` and `frontend/package-lock.json`. To release, change all four and
+rename `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD` in one commit
+(`chore(release): X.Y.Z`), then push the tag `vX.Y.Z`. `.github/workflows/release.yml` checks that
+they agree with the tag and that the section is dated, and creates the release *PolSales X.Y.Z*
+with that section as its notes.
