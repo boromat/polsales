@@ -9,12 +9,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session as DBSession
 
 from app.db.base import get_db
 from app.db.models.enums import OrderSource, OrderStatus
 from app.deps import get_current_user
-from app.services.csv_import import _num, _parse_date
+from app.services.csv_import import _num, _parse_date, db_reason
 from app.services.orders import create_order
 
 router = APIRouter(prefix="/api/exports", tags=["exports"], dependencies=[Depends(get_current_user)])
@@ -130,6 +131,8 @@ def import_historical(db: DBSession = Depends(get_db), content: str = Body(..., 
                     ],
                 )
             created += 1
+        except SQLAlchemyError as exc:
+            errors.append(f"wiersz {i}: {db_reason(exc)}")
         except Exception as exc:  # noqa: BLE001
             errors.append(f"wiersz {i}: {exc}")
     db.commit()

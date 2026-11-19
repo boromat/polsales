@@ -75,6 +75,11 @@ def test_bledny_wiersz_nie_uniewaznia_calego_importu():
         assert zapisane == 2, f"zapisano {zapisane}, oczekiwano 2 (reszta przepadla)"
         assert wynik["google_ads"] == 2
         assert wynik["errors"], "blad wiersza powinien byc zaraportowany"
+        # Komunikat bazy dla uzytkownika: bez tresci SQL, parametrow i wartosci z pliku (CodeQL
+        # py/stack-trace-exposure) - SQLAlchemy dokleja je do str(wyjatku).
+        for blad in wynik["errors"]:
+            assert blad.startswith("wiersz ") and "SQL" not in blad and "parameters" not in blad
+            assert "99999999999" not in blad
     finally:
         db.execute(text("DELETE FROM channel_google.ads_daily WHERE campaign_id LIKE 'TEST-IMPORT-%'"))
         db.commit()

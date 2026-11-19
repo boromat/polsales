@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- **An import error no longer shows the SQL and the row.** When the database rejected a row of a
+  marketing CSV or a historical order import, the error list returned SQLAlchemy's full message:
+  the SQL statement, its parameters and PostgreSQL's DETAIL with the row's values. It now gives
+  the row number and the database's short reason, such as "numeric field overflow". Found by
+  CodeQL (py/stack-trace-exposure).
+
 ## [1.1.2] - 2026-11-19
 
 ### Fixed
