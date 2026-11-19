@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-11-20
+
 ### Fixed
 - **An import error no longer shows the SQL and the row.** When the database rejected a row of a
   marketing CSV or a historical order import, the error list returned SQLAlchemy's full message:
