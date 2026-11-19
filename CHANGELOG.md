@@ -15,7 +15,9 @@ All notable changes to this project are documented here. The format follows
   is defused like any other, and a streamed one is held back until it is whole.
 
 ### Changed
-- polanon 0.4.0 or later is required (from 0.2.2): its masked text holds tokens with a case.
+- polanon 0.4.1 or later is required (from 0.2.2). 0.4 masks a person named again in another
+  case with a token that carries the case, and 0.4.1 masks a PESEL however its digits are
+  grouped, a name written with Cyrillic letters that look Latin and a KRS number as KRS.
 
 ## [1.1.1] - 2026-11-19
 
