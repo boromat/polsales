@@ -13,7 +13,8 @@ You will get an answer within 7 days. Fixes are released as a new version and no
 
 | Version | Supported |
 |---|---|
-| 1.0.x | yes |
+| 1.1.x | yes |
+| 1.0.x | no |
 
 ## Security model in short
 
