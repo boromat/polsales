@@ -11,6 +11,11 @@ used to:
 * restore real values in the answer shown to the user, also while it is being streamed,
 * restore real values in structured output (fields of an order parsed from an e-mail).
 
+polanon 0.4 masks a person named again in another case as ``<OSOBA_1:celownik>``, and the model
+writes such a token back as it got it. In an answer the name comes back declined ("Janowi
+Testowskiemu"), through polanon's own restore; in tool arguments and parsed fields, which go to
+code and the database, it comes back as the mapping holds it.
+
 Rules (the same as in PolCRM and PolCV):
 
 * with masking switched off the AI features work exactly as before,
@@ -33,11 +38,15 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-#: Shape of a polanon token: ``<OSOBA_1>``, ``<EMAIL_12>``, ``<KOD_POCZTOWY_3>``...
-TOKEN_RE = re.compile(r"<[A-Z][A-Z_]*_\d+>")
-#: A trailing fragment of a streamed chunk that may still grow into a token ("<", "<OSO", "<OSOBA_1").
-_PARTIAL_RE = re.compile(r"<[A-Z_]*\d*$")
-_MAX_PARTIAL = 32
+#: Shape of a polanon token: ``<OSOBA_1>``, ``<EMAIL_12>``, ``<KOD_POCZTOWY_3>``..., and a person's
+#: token with the grammatical case polanon 0.4 adds after a colon, ``<OSOBA_1:celownik>`` (as its
+#: ``CASED_TOKEN_PATTERN``). No capturing group, so ``findall`` returns whole tokens.
+TOKEN_RE = re.compile(r"<[A-Z][A-Z_]*_\d+(?::[^\W\d_]+)?>")
+#: A trailing fragment of a streamed chunk that may still grow into a token ("<", "<OSO", "<OSOBA_1",
+#: "<OSOBA_1:cel").
+_PARTIAL_RE = re.compile(r"<[A-Z_]*\d*(?::[^\W\d_]*)?$")
+#: A label with its number, then a colon and the longest case, "miejscownik".
+_MAX_PARTIAL = 44
 
 #: Appended to every system prompt when masking is on, so the model treats tokens as real values.
 TOKENS_NOTE = (
@@ -96,6 +105,11 @@ def _get_anonymizer(with_ner: bool):
 def ensure_available(with_ner: bool = False) -> None:
     """Raise :class:`MaskingUnavailable` when polanon (or spaCy, for NER) cannot run."""
     _get_anonymizer(with_ner)
+
+
+def _as_held(token: str) -> str:
+    """Return the token as the mapping holds it: ``<OSOBA_1>`` for ``<OSOBA_1:celownik>``."""
+    return token.split(":", 1)[0] + ">" if ":" in token else token
 
 
 class StreamRestorer:
@@ -169,15 +183,31 @@ class Masker:
     # -- incoming: tokens -> real values -----------------------------------------------------
 
     def restore(self, text: str) -> str:
-        """Replace known tokens with real values. Unknown tokens are left as they are."""
+        """Replace known tokens in text a person reads with real values; unknown ones stay.
+
+        A token with a case gives the name declined, ``<OSOBA_1:celownik>`` "Janowi Testowskiemu",
+        through polanon's own restore; a name it cannot decline for sure comes back as written.
+        """
         if not text or not isinstance(text, str) or not self.mapping:
             return text
-        return TOKEN_RE.sub(lambda m: self.mapping.get(m.group(0), m.group(0)), text)
+        from polanon.stream_restore import restored
+
+        return restored(text, self.mapping)
+
+    def _restore_as_held(self, text: str) -> str:
+        """Replace known tokens with the values as the mapping holds them, a case dropped."""
+        if not text or not self.mapping:
+            return text
+        return TOKEN_RE.sub(lambda m: self.mapping.get(_as_held(m.group(0)), m.group(0)), text)
 
     def restore_data(self, value: Any) -> Any:
-        """Restore tokens inside a JSON-like value (tool call arguments, structured output)."""
+        """Restore tokens inside a JSON-like value (tool call arguments, structured output).
+
+        The values go to code and the database, which hold the original spelling, so a token with
+        a case gives the value as the mapping holds it, not declined.
+        """
         if isinstance(value, str):
-            return self.restore(value)
+            return self._restore_as_held(value)
         if isinstance(value, dict):
             return {k: self.restore_data(v) for k, v in value.items()}
         if isinstance(value, (list, tuple)):
@@ -190,7 +220,7 @@ class Masker:
 
     def unknown_tokens(self, text: str) -> list[str]:
         """Tokens in a model answer that are not in the mapping (the model invented or mangled them)."""
-        return [t for t in TOKEN_RE.findall(text or "") if t not in self.mapping]
+        return [t for t in TOKEN_RE.findall(text or "") if _as_held(t) not in self.mapping]
 
     def labels(self) -> dict[str, int]:
         """How many values of each kind were masked, e.g. ``{"FIRMA": 2, "NIP": 1}`` (no values)."""

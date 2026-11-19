@@ -7,6 +7,7 @@ the NIP and the IBAN have valid checksums but belong to no one (IBAN bank code 9
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -176,3 +177,23 @@ def test_prospect_from_a_draft_is_masked_in_a_tool_result():
         ensure_ascii=False,
     )
     assert "Biegowy" not in dumped and "Przykładowy" not in dumped
+
+
+def test_a_person_named_again_in_another_case_comes_back_declined():
+    """polanon 0.4 masks the second mention as <OSOBA_1:celownik>; the answer shows the name."""
+    m = privacy.polanon_masker()
+    assert m.mask("Jan Testowski zamówił dziesięć piłek.") == "<OSOBA_1> zamówił dziesięć piłek."
+    masked = m.mask("Wyślij Janowi Testowskiemu fakturę.")
+    assert masked == "Wyślij <OSOBA_1:celownik> fakturę."
+    assert m.restore(masked) == "Wyślij Janowi Testowskiemu fakturę."
+    assert m.restore_data({"contact": "<OSOBA_1:celownik>"}) == {"contact": "Jan Testowski"}
+    assert m.unknown_tokens(masked) == []
+
+
+def test_the_token_shape_is_polanons():
+    """privacy.TOKEN_RE mirrors polanon's CASED_TOKEN_PATTERN without importing polanon on load."""
+    from polanon.policy import CASED_TOKEN_PATTERN
+
+    samples = ["<OSOBA_1>", "<OSOBA_1:celownik>", "<KOD_POCZTOWY_12>", "<OSOBA_3:wołacz>", "<OSOBA_1:>", "<OSOBA_1: x>"]
+    for sample in samples:
+        assert bool(privacy.TOKEN_RE.fullmatch(sample)) == bool(re.fullmatch(CASED_TOKEN_PATTERN, sample)), sample

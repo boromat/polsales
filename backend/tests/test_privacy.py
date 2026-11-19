@@ -24,6 +24,7 @@ SECRETS = {
     "Klub Sportowy Orlik": "FIRMA",
     "1234563218": "NIP",
     "Anna Testowa": "OSOBA",
+    "Jan Testowski": "OSOBA",
     "anna.testowa@orlik.example": "EMAIL",
 }
 
@@ -119,6 +120,49 @@ def test_stale_tokens_in_input_are_defused():
     masked = m.mask("Stara odpowiedź: <FIRMA_2>. Teraz: Klub Sportowy Orlik")
     assert masked == "Stara odpowiedź: [FIRMA_2]. Teraz: <FIRMA_1>"
     assert m.restore(masked) == "Stara odpowiedź: [FIRMA_2]. Teraz: Klub Sportowy Orlik"
+
+
+# -- A person named again in another case (polanon 0.4) ---------------------------------------
+
+
+def test_a_token_with_a_case_comes_back_declined_in_text():
+    """polanon 0.4 masks a person named again in another case as <OSOBA_1:celownik>, and the model
+    writes the token as it got it. The restore read only tokens without a case, so the user saw
+    the token itself instead of the name."""
+    m = make_masker()
+    m.mask("Jan Testowski zamówił piłki.")
+    answer = "Wysłano <OSOBA_1:celownik> fakturę."
+    assert m.restore(answer) == "Wysłano Janowi Testowskiemu fakturę."
+    assert m.unknown_tokens(answer) == []
+
+
+def test_a_token_with_a_case_in_data_gives_the_value_as_written():
+    """Tool arguments and parsed fields go to code and the database, which hold the original."""
+    m = make_masker()
+    m.mask("Jan Testowski")
+    assert m.restore_data({"contact": "<OSOBA_1:dopełniacz>", "limit": 5}) == {"contact": "Jan Testowski", "limit": 5}
+
+
+def test_an_unknown_token_with_a_case_is_left_and_reported():
+    m = make_masker()
+    m.mask("Jan Testowski")
+    assert m.restore("<OSOBA_9:celownik>") == "<OSOBA_9:celownik>"
+    assert m.unknown_tokens("<OSOBA_1:celownik> i <OSOBA_9:celownik>") == ["<OSOBA_9:celownik>"]
+
+
+def test_a_stale_token_with_a_case_in_input_is_defused():
+    """Once the restore reads cased tokens, an old one in history must not become today's person."""
+    m = make_masker()
+    masked = m.mask("Stara odpowiedź: <OSOBA_2:celownik>. Teraz: Jan Testowski")
+    assert masked == "Stara odpowiedź: [OSOBA_2:celownik]. Teraz: <OSOBA_1>"
+
+
+def test_stream_restorer_holds_back_a_token_with_a_case_split_across_chunks():
+    m = make_masker()
+    m.mask("Jan Testowski")
+    r = m.stream_restorer()
+    assert r.feed("Wysłano <OSOBA_1:cel") == "Wysłano "
+    assert r.feed("ownik> fakturę.") + r.flush() == "Janowi Testowskiemu fakturę."
 
 
 def test_mask_blocks_drops_block_types_it_cannot_mask():
