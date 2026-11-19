@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-19
+
 ### Fixed
 - **A person named again in another case is restored.** polanon 0.4 masks such a mention as
   `<OSOBA_1:celownik>`, and the model writes the token back as it got it. The panel's restore read
