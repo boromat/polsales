@@ -12,6 +12,7 @@ import re
 from datetime import date
 
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session as DBSession
 
 CHANNEL_ALIASES = {
@@ -59,6 +60,17 @@ def _num(v: str | None) -> float | None:
         return float(s)
     except ValueError:
         return None
+
+
+def db_reason(exc: SQLAlchemyError) -> str:
+    """Return what the database objected to in one row, for the person who uploaded the file.
+
+    ``str(exc)`` of SQLAlchemy carries the SQL statement, its parameters (the row's values) and
+    PostgreSQL's DETAIL with the whole row; only the primary message goes back, such as "numeric
+    field overflow".
+    """
+    diag = getattr(getattr(exc, "orig", None), "diag", None)
+    return getattr(diag, "message_primary", None) or "baza danych odrzuciła ten wiersz"
 
 
 def import_marketing_csv(db: DBSession, content: str) -> dict:
@@ -124,6 +136,8 @@ def import_marketing_csv(db: DBSession, content: str) -> dict:
                         {"d": d, "cid": campaign, "cn": campaign, "imp": imp, "clk": clk, "cost": cost},
                     )
                     counts["google_ads"] += 1
+        except SQLAlchemyError as exc:
+            errors.append(f"wiersz {i}: {db_reason(exc)}")
         except Exception as exc:  # noqa: BLE001
             errors.append(f"wiersz {i}: {exc}")
 

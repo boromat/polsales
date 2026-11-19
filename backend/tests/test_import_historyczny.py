@@ -40,6 +40,10 @@ def test_zly_wiersz_nie_kasuje_poprawnych(auth_client):
         wynik = resp.json()
 
         assert wynik["errors"], "błędny wiersz musi zostać zaraportowany"
+        # Bez treści SQL, parametrów i danych z pliku (CodeQL py/stack-trace-exposure).
+        for blad in wynik["errors"]:
+            assert blad.startswith("wiersz ") and "SQL" not in blad and "parameters" not in blad
+            assert "TEST-IMPORT-HIST ZLY" not in blad and "99999999999" not in blad
         assert wynik["created"] == 2, f"utworzono {wynik['created']}, oczekiwano 2"
 
         zapisane = db.execute(
