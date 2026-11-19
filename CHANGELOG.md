@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- **A person named again in another case is restored.** polanon 0.4 masks such a mention as
+  `<OSOBA_1:celownik>`, and the model writes the token back as it got it. The panel's restore read
+  only tokens without a case, so the answer showed `<OSOBA_1:celownik>` itself, a tool got it as
+  an argument, and the count of unknown tokens missed it. In an answer the name now comes back
+  declined ("Janowi Testowskiemu") through polanon's own restore; in tool arguments and parsed
+  fields, which go to the database, it comes back as written. A stale cased token in the history
+  is defused like any other, and a streamed one is held back until it is whole.
+
+### Changed
+- polanon 0.4.0 or later is required (from 0.2.2): its masked text holds tokens with a case.
+
 ## [1.1.1] - 2026-11-19
 
 ### Changed

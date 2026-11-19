@@ -92,7 +92,9 @@ przypadku, adresy, telefony, e-maile, firmy).
 3. Model odpowiada tokenami. Argumenty wywołań narzędzi są odtwarzane **przed** zapytaniem do
    bazy (`get_company_profile(nip="<NIP_1>")` dostaje prawdziwy NIP), a odpowiedź jest odtwarzana
    także w trakcie streamingu - token rozcięty między fragmenty (`<FIR` + `MA_1>`) jest
-   buforowany, więc użytkownik nigdy nie widzi połówki tokenu.
+   buforowany, więc użytkownik nigdy nie widzi połówki tokenu. Osoba wspomniana ponownie w innym
+   przypadku idzie do modelu jako `<OSOBA_1:celownik>`: w odpowiedzi wraca odmieniona („Janowi
+   Testowskiemu”), a w argumentach narzędzi tak, jak jest zapisana.
 4. Baza i użytkownik widzą prawdziwe wartości; model dostaje tokeny w miejscu wszystkiego, co
    rozpozna polanon, i wszystkiego, co panel zna z bazy.
 5. **Wartości znane z bazy są maskowane zawsze** (polanon `DenylistGuard`): nazwy firm klientów

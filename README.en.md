@@ -95,7 +95,9 @@ numbers, e-mails, companies).
 3. The model answers with tokens. Tool call arguments are restored **before** the database is
    queried (`get_company_profile(nip="<NIP_1>")` gets the real NIP), and the answer is restored
    while it streams: a token split across chunks (`<FIR` + `MA_1>`) is buffered, so the user
-   never sees half a token.
+   never sees half a token. A person named again in another case goes out as
+   `<OSOBA_1:celownik>`: in the answer the name comes back declined ("Janowi Testowskiemu"), in
+   tool arguments as it is written.
 4. The database and the user see real values; the model gets tokens in place of everything
    polanon detects and everything the panel knows from its database.
 5. **Values known from the database are always masked** (polanon `DenylistGuard`): client
