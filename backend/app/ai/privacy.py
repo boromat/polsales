@@ -15,12 +15,12 @@ The masking itself is polanon's :class:`~polanon.MaskedTurn`, one per request: i
 history, the question and every tool result with one mapping, re-masks an earlier message when a
 value is first recognised in a later one, restores a streamed answer, and masks the values the
 panel knows from its database (``known``) wherever they appear, also when a name looks like a
-well-known brand, without its legal form, and a NIP however its digits are grouped.
-:class:`Masker` adds what is PolSales' own:
+well-known brand, without its legal form, and a NIP however its digits are grouped. PolSales
+stores the history with real values, so the turn is started with ``plain_input=True``: no token
+in the input belongs to this request, and token-shaped text is defused to ``[FIRMA_2]`` (see
+:meth:`Masker.mask`). :class:`Masker` adds what is PolSales' own:
 
 * :class:`MaskingUnavailable`, which callers catch without importing polanon,
-* token-shaped text in the input defused to ``[FIRMA_2]``: PolSales stores history with real
-  values, so no token in it belongs to this request (see :meth:`Masker.mask`),
 * tool arguments and parsed fields restored as the mapping holds them, a case the model added
   dropped (``restore_data(as_held=True)``): they go to code and the database, which hold the
   original spelling, while an answer a person reads comes back declined ("Janowi Testowskiemu"),
@@ -124,19 +124,6 @@ def _fail_closed(what: str) -> Iterator[None]:
         raise MaskingUnavailable(f"{what}: {exc}") from exc
 
 
-def _defused(value: Any) -> Any:
-    """Every string inside a JSON-like value with token-shaped text written ``[FIRMA_2]``."""
-    if isinstance(value, str):
-        return TOKEN_RE.sub(lambda m: "[" + m.group(0)[1:-1] + "]", value)
-    if isinstance(value, dict):
-        return {k: _defused(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_defused(v) for v in value]
-    if isinstance(value, tuple):
-        return tuple(_defused(v) for v in value)
-    return value
-
-
 class Masker:
     """Masks one request on a polanon :class:`~polanon.MaskedTurn`.
 
@@ -154,7 +141,8 @@ class Masker:
         with _fail_closed("polanon nie przyjął listy znanych wartości"):
             # "drop": a block no mask reaches (a thinking block stored while masking was off) is
             # left out of the history; its signature forbids masking it, and the model needs none.
-            self._turn = MaskedTurn(anonymizer, known=list(known), unknown_blocks="drop")
+            # plain_input: the history is stored with real values, the model's answers restored.
+            self._turn = MaskedTurn(anonymizer, known=list(known), unknown_blocks="drop", plain_input=True)
 
     @property
     def mapping(self) -> dict[str, str]:
@@ -167,15 +155,17 @@ class Masker:
         """Mask one text. Any failure of polanon becomes :class:`MaskingUnavailable`.
 
         Token-shaped text already in the input (a token the model invented, stored as it wrote
-        it, something the user typed) is defused to ``[FIRMA_2]`` first. Numbering starts again
-        in every request and the history is stored with real values, so an old ``<FIRMA_2>`` is
-        never a token of this request: polanon would take it for the value that got ``<FIRMA_2>``
-        earlier in the request, and the answer would restore it to that value.
+        it, something the user typed) is defused to ``[FIRMA_2]`` first, by polanon's
+        ``plain_input``; so is every string :meth:`mask_data` and :meth:`mask_messages` mask.
+        Numbering starts again in every request and the history is stored with real values, so
+        an old ``<FIRMA_2>`` is never a token of this request: read as one, it would stand for
+        the value that got ``<FIRMA_2>`` earlier in the request, and the answer would restore it
+        to that value.
         """
         if not text or not isinstance(text, str):
             return text
         with _fail_closed("blad polanon"):
-            return self._turn.mask(_defused(text))
+            return self._turn.mask(text)
 
     def mask_data(self, value: Any) -> Any:
         """Mask every string inside a JSON-like value (tool results, aggregates).
@@ -184,7 +174,7 @@ class Masker:
         Decimal, is masked as its text, the form ``json.dumps(default=str)`` sends it in.
         """
         with _fail_closed("blad polanon"):
-            return self._turn.mask_data(_defused(value), default=str)
+            return self._turn.mask_data(value, default=str)
 
     def mask_messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Mask a chat history in the Anthropic Messages API shape (one mapping for all of it).
@@ -196,7 +186,7 @@ class Masker:
         A value first recognised in a later message is masked in the earlier ones too.
         """
         with _fail_closed("blad polanon"):
-            return self._turn.mask_messages(_defused(messages))
+            return self._turn.mask_messages(messages)
 
     # -- incoming: tokens -> real values -----------------------------------------------------
 
