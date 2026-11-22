@@ -17,15 +17,17 @@ All notable changes to this project are documented here. The format follows
   digits or more with or without spaces, hyphens, dots or slashes.
 
 ### Changed
-- polanon 0.4.2 or later is required (from 0.4.1). The masking runs on polanon's `MaskedTurn`,
+- polanon 0.4.3 or later is required (from 0.4.1). The masking runs on polanon's `MaskedTurn`,
   and the code it now covers is gone from the panel: its own stream restorer, its restore of tool
-  arguments as the mapping holds them (now `restore_data(as_held=True)`), the copy of a client
-  name without its legal form and of a NIP with dashes in the known values, and the allowlist
-  trimmed for a client named like a brand. What stays the panel's own: a token in the input is
-  defused, since the history is stored with real values, and a one-word client name without its
-  legal form ("Budex" for "Budex Sp. z o.o.") is still listed, which polanon leaves out on purpose.
+  arguments as the mapping holds them (now `restore_data(as_held=True)`), its defusing of a token
+  in the input (now `plain_input=True`, for a history stored with real values), the copy of a
+  client name without its legal form and of a NIP with dashes in the known values, and the
+  allowlist trimmed for a client named like a brand. A one-word client name without its legal
+  form ("Budex" for "Budex Sp. z o.o.") is still listed by the panel, which polanon leaves out on
+  purpose.
 - A value in a tool result that is not JSON, such as a Decimal or a date, is masked as the text
-  the model gets, not passed through and turned into text after the masking.
+  the model gets, a token in that text defused too, not passed through and turned into text after
+  the masking.
 
 ## [1.1.3] - 2026-11-20
 
