@@ -64,35 +64,42 @@ def without_legal_form(name: str) -> str:
     return _LEGAL_FORM_RE.sub("", name.strip()).strip() or name.strip()
 
 
+def _company_terms(name: str) -> list[str]:
+    """Nazwa firmy, a gdy po odcięciu formy prawnej zostaje jedno słowo - także to słowo.
+
+    Klient pisze w pytaniu i w mailu zwykle samą nazwę, bez "Sp. z o.o.". polanon (od 0.4.2)
+    znajduje firmę z listy bez formy prawnej sam, ale tylko gdy zostają co najmniej dwa słowa:
+    jedno słowo ("Budex" z "Budex Sp. z o.o.") jest jego zdaniem w zbyt wielu zdaniach, które
+    nie mówią o firmie. Klient sklepu o takiej nazwie jest maskowany tutaj, jak przed 0.4.2:
+    lepiej zamaskować za dużo, niż wysłać nazwę klienta jawnie.
+    """
+    short = without_legal_form(name)
+    return [name, short] if short != name and len(short.split()) == 1 else [name]
+
+
 def known_terms(db: DBSession) -> list[str]:
-    """Wartości z bazy maskowane zawsze (polanon DenylistGuard): nazwy firm klientów i ich NIP-y,
-    nazwy firm i osób ze szkiców zamówień (także nowych klientów, których nie ma jeszcze
-    w `core.companies`) oraz imiona i nazwiska osób kontaktowych.
+    """Wartości z bazy maskowane zawsze (polanon, `MaskedTurn(known=...)`): nazwy firm klientów
+    i ich NIP-y, nazwy firm i osób ze szkiców zamówień (także nowych klientów, których nie ma
+    jeszcze w `core.companies`) oraz imiona i nazwiska osób kontaktowych.
 
     Reguły polanon rozpoznają firmę po formie prawnej, a NIP po sumie kontrolnej. W wyniku
     narzędzia nazwa stoi jednak sama, bez kontekstu ("Klub Biegowy Przykład"), a NIP bywa
-    zapisany z kreskami. Panel wie, kim są jego klienci, więc przekazuje te wartości wprost.
-    DenylistGuard oznacza je tokenem <FIRMA_n> także dla osób - to celowo: lepsza nieprecyzyjna
-    etykieta niż nazwisko wysłane jawnie.
+    zapisany z literówką w sumie kontrolnej. Panel wie, kim są jego klienci, więc przekazuje te
+    wartości wprost. polanon znajduje je też bez formy prawnej i z cyframi NIP-u pogrupowanymi
+    inaczej ("123-456-32-18" dla "1234563218"). Znane wartości dostają token <FIRMA_n> także dla
+    osób - to celowo: lepsza nieprecyzyjna etykieta niż nazwisko wysłane jawnie.
     """
     terms: list[str] = []
     for name, nip in db.execute(select(Company.name, Company.nip)).all():
         if name:
-            terms.append(name)
-            # W pytaniu i w mailu klient pisze zwykle samą nazwę, bez "Sp. z o.o." - DenylistGuard
-            # dopasowuje literalnie, więc bez tego "Siłownia Testowa" przeszłaby do modelu jawnie.
-            short = without_legal_form(name)
-            if short != name:
-                terms.append(short)
+            terms.extend(_company_terms(name))
         if nip:
             terms.append(nip)
-            terms.append(f"{nip[:3]}-{nip[3:6]}-{nip[6:8]}-{nip[8:]}")
     for company, contact in db.execute(select(OrderDraft.company_name, OrderDraft.contact_name)).all():
-        for value in (company, contact):
-            if value:
-                terms.append(value)
-                if without_legal_form(value) != value:
-                    terms.append(without_legal_form(value))
+        if company:
+            terms.extend(_company_terms(company))
+        if contact:
+            terms.append(contact)
     terms.extend(name for (name,) in db.execute(select(Contact.full_name)).all() if name)
     return terms
 

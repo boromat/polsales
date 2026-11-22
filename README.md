@@ -86,9 +86,11 @@ przypadku, adresy, telefony, e-maile, firmy).
 **Jak działa w PolSales** (`backend/app/ai/privacy.py`, `backend/app/services/privacy_settings.py`):
 
 1. Na każde żądanie do modelu (jedna tura czatu, jeden mail, jedno zestawienie) powstaje
-   `Masker` z mapowaniem token -> wartość, trzymanym tylko w pamięci.
+   `Masker` na `MaskedTurn` z polanon, z mapowaniem token -> wartość, trzymanym tylko w pamięci.
 2. Maskowane jest wszystko, co wychodzi: pytanie, cała historia rozmowy, wyniki narzędzi,
-   treść maila, agregaty do zestawień i rekomendacji. Ta sama osoba ma ten sam token w całym żądaniu.
+   treść maila, agregaty do zestawień i rekomendacji. Ta sama osoba ma ten sam token w całym
+   żądaniu, a nazwisko rozpoznane dopiero w pytaniu jest maskowane także we wcześniejszych
+   wiadomościach historii.
 3. Model odpowiada tokenami. Argumenty wywołań narzędzi są odtwarzane **przed** zapytaniem do
    bazy (`get_company_profile(nip="<NIP_1>")` dostaje prawdziwy NIP), a odpowiedź jest odtwarzana
    także w trakcie streamingu - token rozcięty między fragmenty (`<FIR` + `MA_1>`) jest
@@ -97,10 +99,11 @@ przypadku, adresy, telefony, e-maile, firmy).
    Testowskiemu”), a w argumentach narzędzi tak, jak jest zapisana.
 4. Baza i użytkownik widzą prawdziwe wartości; model dostaje tokeny w miejscu wszystkiego, co
    rozpozna polanon, i wszystkiego, co panel zna z bazy.
-5. **Wartości znane z bazy są maskowane zawsze** (polanon `DenylistGuard`): nazwy firm klientów
-   (także bez formy prawnej, np. "Siłownia Testowa" zamiast "Siłownia Testowa Sp. z o.o."),
-   ich NIP-y (z kreskami i bez), firmy i osoby ze szkiców zamówień oraz osoby kontaktowe -
-   także gdy nazwa wygląda jak znana marka, którą polanon normalnie przepuszcza.
+5. **Wartości znane z bazy są maskowane zawsze** (`known` w polanon, czyli `DenylistGuard`):
+   nazwy firm klientów (także bez formy prawnej, np. "Siłownia Testowa" zamiast "Siłownia
+   Testowa Sp. z o.o.", i "Budex" zamiast "Budex Sp. z o.o."), ich NIP-y (z kreskami, spacjami
+   i bez), firmy i osoby ze szkiców zamówień oraz osoby kontaktowe - także gdy nazwa wygląda jak
+   znana marka, którą polanon normalnie przepuszcza.
 6. **Fail closed**: gdy maskowanie jest włączone, a polanon nie jest zainstalowany albo zgłosi
    błąd, do modelu nie wychodzi nic. Czat pokazuje komunikat, mail trafia do ręcznej weryfikacji,
    a zestawienie i rekomendacje liczą się regułami.

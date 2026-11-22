@@ -5,6 +5,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- **A surname first recognised later in the history is masked in the earlier messages too.**
+  The history was masked message by message, so "Czy Kowalczyk dzwonił?" went to the model in
+  clear when only a later message named "Adam Kowalczyk". The whole history is now masked with
+  polanon's `MaskedTurn.mask_messages`, which masks an earlier message again once a value is
+  recognised in a later one.
+- **A client's NIP is masked however its digits are grouped.** The panel listed a NIP as stored
+  and in one grouping, 123-456-78-90, so a NIP the rules do not read, such as one stored with a
+  typo in its checksum, went out as "123 45 67 890". polanon 0.4.2 finds a listed number of nine
+  digits or more with or without spaces, hyphens, dots or slashes.
+
+### Changed
+- polanon 0.4.2 or later is required (from 0.4.1). The masking runs on polanon's `MaskedTurn`,
+  and the code it now covers is gone from the panel: its own stream restorer, its restore of tool
+  arguments as the mapping holds them (now `restore_data(as_held=True)`), the copy of a client
+  name without its legal form and of a NIP with dashes in the known values, and the allowlist
+  trimmed for a client named like a brand. What stays the panel's own: a token in the input is
+  defused, since the history is stored with real values, and a one-word client name without its
+  legal form ("Budex" for "Budex Sp. z o.o.") is still listed, which polanon leaves out on purpose.
+- A value in a tool result that is not JSON, such as a Decimal or a date, is masked as the text
+  the model gets, not passed through and turned into text after the masking.
+
 ## [1.1.3] - 2026-11-20
 
 ### Fixed
