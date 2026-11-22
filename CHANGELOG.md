@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-11-22
+
 ### Fixed
 - **A surname first recognised later in the history is masked in the earlier messages too.**
   The history was masked message by message, so "Czy Kowalczyk dzwonił?" went to the model in

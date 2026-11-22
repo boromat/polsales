@@ -100,7 +100,7 @@ from app.api import (  # noqa: E402  (import po skonfigurowaniu logowania)
     settings as settings_api,
 )
 
-app = FastAPI(title="PolSales", version="1.1.3")
+app = FastAPI(title="PolSales", version="1.1.4")
 
 
 # Twardy limit rozmiaru żądania. Sprawdzany PRZED trasowaniem i przed wczytaniem ciała,
