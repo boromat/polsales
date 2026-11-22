@@ -1,13 +1,16 @@
-"""PII masking contract, tested with a fake anonymizer (no polanon needed).
+"""PII masking contract, tested with a fake anonymizer behind polanon's MaskedTurn.
 
-The fake masks a fixed list of fictional values, which is enough to check what matters:
-what reaches the model, what reaches the tools, what the user sees and what is stored.
-The same scenarios run against the real polanon in ``test_polanon_real.py``.
+The fake masks a fixed list of fictional values instead of polanon's detection rules, which is
+enough to check what matters: what reaches the model, what reaches the tools, what the user sees
+and what is stored. The masking around it (one mapping per request, the restore, the streaming)
+is polanon's own. The same scenarios run against the real polanon in ``test_polanon_real.py``.
 """
 
 from __future__ import annotations
 
 import json
+from datetime import date
+from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
@@ -44,8 +47,21 @@ def fake_anonymize(text, mapping):
     return text, mapping
 
 
-def make_masker():
-    return privacy.Masker(anonymize=fake_anonymize)
+class FakeAnonymizer:
+    """polanon's Anonymizer as MaskedTurn uses it, masking with ``anonymize(text, mapping)``."""
+
+    judge = None
+
+    def __init__(self, anonymize):
+        self._anonymize = anonymize
+
+    def anonymize_sync(self, text, mapping=None):
+        masked, full = self._anonymize(text, dict(mapping or {}))
+        return SimpleNamespace(anonymized=masked, mapping=full)
+
+
+def make_masker(anonymize=fake_anonymize):
+    return privacy.Masker(FakeAnonymizer(anonymize))
 
 
 def broken_anonymize(text, mapping):
@@ -81,6 +97,22 @@ def test_mask_data_keeps_keys_numbers_and_structure():
     }
 
 
+def test_mask_data_masks_a_value_that_is_not_json_as_its_text():
+    """A tool row may hold a Decimal, a date or another object. It reaches the model as the text
+    json.dumps(default=str) writes, so that text is what gets masked, not let through."""
+
+    class Row:
+        def __str__(self):
+            return "kontakt: Anna Testowa"
+
+    m = make_masker()
+    assert m.mask_data({"ltv": Decimal("18450.00"), "since": date(2026, 11, 9), "row": Row()}) == {
+        "ltv": "18450.00",
+        "since": "2026-11-09",
+        "row": "kontakt: <OSOBA_1>",
+    }
+
+
 def test_restore_data_in_nested_tool_arguments():
     m = make_masker()
     m.mask("NIP 1234563218")
@@ -100,7 +132,9 @@ def test_unknown_tokens_are_left_untouched_and_reported():
 
 def test_anonymizer_crash_becomes_masking_unavailable():
     with pytest.raises(privacy.MaskingUnavailable):
-        privacy.Masker(anonymize=broken_anonymize).mask("Anna Testowa")
+        make_masker(broken_anonymize).mask("Anna Testowa")
+    with pytest.raises(privacy.MaskingUnavailable):
+        make_masker(broken_anonymize).mask_data({"contact": "Anna Testowa"})
 
 
 def test_stream_restorer_handles_tokens_split_across_chunks():
@@ -147,7 +181,7 @@ def test_an_unknown_token_with_a_case_is_left_and_reported():
     m = make_masker()
     m.mask("Jan Testowski")
     assert m.restore("<OSOBA_9:celownik>") == "<OSOBA_9:celownik>"
-    assert m.unknown_tokens("<OSOBA_1:celownik> i <OSOBA_9:celownik>") == ["<OSOBA_9:celownik>"]
+    assert m.unknown_tokens("<OSOBA_1:celownik> i <OSOBA_9:celownik>") == ["<OSOBA_9>"]
 
 
 def test_a_stale_token_with_a_case_in_input_is_defused():
@@ -165,32 +199,58 @@ def test_stream_restorer_holds_back_a_token_with_a_case_split_across_chunks():
     assert r.feed("ownik> fakturę.") + r.flush() == "Janowi Testowskiemu fakturę."
 
 
-def test_mask_blocks_drops_block_types_it_cannot_mask():
+def test_mask_messages_drops_block_types_it_cannot_mask():
     m = make_masker()
     content = [
         {"type": "thinking", "thinking": "Anna Testowa...", "signature": "abc"},
         {"type": "text", "text": "Anna Testowa"},
     ]
-    assert m.mask_blocks(content) == [{"type": "text", "text": "<OSOBA_1>"}]
+    assert m.mask_messages([{"role": "assistant", "content": content}]) == [
+        {"role": "assistant", "content": [{"type": "text", "text": "<OSOBA_1>"}]}
+    ]
 
 
-def test_mask_blocks_touches_only_user_data():
+def test_mask_messages_touches_only_user_data():
     m = make_masker()
-    content = [
-        {"type": "text", "text": "Ile kupił Klub Sportowy Orlik?"},
-        {"type": "tool_use", "id": "toolu_1", "name": "company_profile", "input": {"nip": "1234563218"}},
+    question = [{"type": "text", "text": "Ile kupił Klub Sportowy Orlik?"}]
+    call = [{"type": "tool_use", "id": "toolu_1", "name": "company_profile", "input": {"nip": "1234563218"}}]
+    result = [
         {
             "type": "tool_result",
             "tool_use_id": "toolu_1",
             "content": json.dumps({"name": "Klub Sportowy Orlik", "orders": 3}),
-        },
+        }
     ]
-    masked = m.mask_blocks(content)
-    assert masked[0]["text"] == "Ile kupił <FIRMA_1>?"
-    assert masked[1] == {"type": "tool_use", "id": "toolu_1", "name": "company_profile", "input": {"nip": "<NIP_1>"}}
-    assert json.loads(masked[2]["content"]) == {"name": "<FIRMA_1>", "orders": 3}
-    assert m.restore_blocks(masked[:2]) == content[:2]
+    history = [
+        {"role": "user", "content": question},
+        {"role": "assistant", "content": call},
+        {"role": "user", "content": result},
+    ]
+    masked = m.mask_messages(history)
+    assert [msg["role"] for msg in masked] == ["user", "assistant", "user"]
+    assert masked[0]["content"] == [{"type": "text", "text": "Ile kupił <FIRMA_1>?"}]
+    assert masked[1]["content"] == [
+        {"type": "tool_use", "id": "toolu_1", "name": "company_profile", "input": {"nip": "<NIP_1>"}}
+    ]
+    assert masked[2]["content"][0]["tool_use_id"] == "toolu_1"
+    assert json.loads(masked[2]["content"][0]["content"]) == {"name": "<FIRMA_1>", "orders": 3}
+    assert m.restore_blocks(masked[0]["content"] + masked[1]["content"]) == question + call
     assert m.labels() == {"FIRMA": 1, "NIP": 1}
+
+
+def test_a_stale_token_later_in_the_history_is_defused():
+    """polanon reads a token its mapping already holds as text masked before. PolSales stores the
+    history with real values, so an old <FIRMA_1> after this request handed <FIRMA_1> out is
+    defused, not restored as this request's company."""
+    m = make_masker()
+    masked = m.mask_messages(
+        [
+            {"role": "user", "content": "Ile kupił Klub Sportowy Orlik?"},
+            {"role": "assistant", "content": [{"type": "text", "text": "Stara odpowiedź: <FIRMA_1> zapłacił."}]},
+        ]
+    )
+    assert masked[0]["content"] == "Ile kupił <FIRMA_1>?"
+    assert masked[1]["content"] == [{"type": "text", "text": "Stara odpowiedź: [FIRMA_1] zapłacił."}]
 
 
 # -- assistant loop -------------------------------------------------------------------------
@@ -349,7 +409,7 @@ def test_failure_while_masking_a_tool_result_stops_before_next_call(monkeypatch,
                 None,
                 tool_db=ro_session,
                 client=client,
-                masker_factory=lambda _db: privacy.Masker(anonymize=flaky),
+                masker_factory=lambda _db: make_masker(flaky),
             )
         )
     )
@@ -473,7 +533,7 @@ def test_weekly_summary_falls_back_to_baseline_when_masking_breaks(monkeypatch):
     monkeypatch.setattr(weekly_summary, "build_client", lambda: object())
     monkeypatch.setattr(weekly_summary, "structured_json", lambda *a, **k: pytest.fail("model called"))
     agg = {"top_company": {"name": "Klub Sportowy Orlik"}}
-    assert weekly_summary._ai_narrative(agg, privacy.Masker(anonymize=broken_anonymize)) is None
+    assert weekly_summary._ai_narrative(agg, make_masker(broken_anonymize)) is None
 
 
 def test_recommendations_are_restored_before_validation(monkeypatch):
@@ -553,8 +613,9 @@ class _FakeDB:
 
 
 def test_known_terms_include_company_names_and_nips():
+    """A NIP goes as stored: polanon finds a listed number however its digits are grouped."""
     db = _FakeDB(companies=[("Klub Sportowy Orlik", "1234563218"), ("", None)])
-    assert privacy_settings.known_terms(db) == ["Klub Sportowy Orlik", "1234563218", "123-456-32-18"]
+    assert privacy_settings.known_terms(db) == ["Klub Sportowy Orlik", "1234563218"]
 
 
 def test_known_terms_include_draft_names_and_contacts():
@@ -564,9 +625,7 @@ def test_known_terms_include_draft_names_and_contacts():
         contacts=["Anna Testowa", None],
     )
     terms = privacy_settings.known_terms(db)
-    assert {"Klub Biegowy Przykład Sp. z o.o.", "Klub Biegowy Przykład", "Piotr Przykładowy", "Anna Testowa"} <= set(
-        terms
-    )
+    assert terms == ["Klub Biegowy Przykład Sp. z o.o.", "Piotr Przykładowy", "Anna Testowa"]
 
 
 def test_build_masker_turns_any_db_error_into_masking_unavailable(monkeypatch, clean_privacy_setting):
@@ -614,9 +673,21 @@ def test_without_legal_form(name, short):
     assert privacy_settings.without_legal_form(name) == short
 
 
-def test_known_terms_add_the_name_without_legal_form():
-    db = _FakeDB(companies=[("Siłownia Testowa Sp. z o.o.", "1112223332")])
-    assert "Siłownia Testowa" in privacy_settings.known_terms(db)
+def test_known_terms_add_a_one_word_name_without_legal_form():
+    """polanon finds "Siłownia Testowa" for "Siłownia Testowa Sp. z o.o." itself, but leaves one
+    word alone ("Budex") unmasked on purpose; a client of the shop named so is masked here."""
+    db = _FakeDB(
+        companies=[("Siłownia Testowa Sp. z o.o.", "1112223332"), ("Budex Sp. z o.o.", None)],
+        drafts=[("Biegacz s.c.", None)],
+    )
+    assert privacy_settings.known_terms(db) == [
+        "Siłownia Testowa Sp. z o.o.",
+        "1112223332",
+        "Budex Sp. z o.o.",
+        "Budex",
+        "Biegacz s.c.",
+        "Biegacz",
+    ]
 
 
 def test_privacy_settings_api(auth_client, monkeypatch, clean_privacy_setting):

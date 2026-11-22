@@ -275,8 +275,9 @@ def run_stream(
     messages = history
     if masker:
         try:
-            # Jeden masker na całą turę: ta sama osoba ma ten sam token w historii i w wynikach narzędzi.
-            messages = [{"role": m["role"], "content": masker.mask_blocks(m["content"])} for m in history]
+            # Jeden masker na całą turę: ta sama osoba ma ten sam token w historii i w wynikach narzędzi,
+            # a wartość rozpoznana dopiero w pytaniu jest maskowana też we wcześniejszych wiadomościach.
+            messages = masker.mask_messages([{"role": m["role"], "content": m["content"]} for m in history])
         except privacy.MaskingUnavailable as exc:
             yield _masking_error(exc)
             return

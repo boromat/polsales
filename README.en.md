@@ -87,11 +87,12 @@ numbers, e-mails, companies).
 
 **How it works here** (`backend/app/ai/privacy.py`, `backend/app/services/privacy_settings.py`):
 
-1. Every request to a model (one chat turn, one e-mail, one summary) gets a `Masker` with a
-   token -> value mapping that lives only in memory.
+1. Every request to a model (one chat turn, one e-mail, one summary) gets a `Masker` on
+   polanon's `MaskedTurn`, with a token -> value mapping that lives only in memory.
 2. Everything that goes out is masked: the question, the whole conversation history, tool
    results, the e-mail body, the aggregates for summaries and recommendations. The same person
-   gets the same token across the request.
+   gets the same token across the request, and a surname first recognised in the question is
+   masked in the earlier messages of the history too.
 3. The model answers with tokens. Tool call arguments are restored **before** the database is
    queried (`get_company_profile(nip="<NIP_1>")` gets the real NIP), and the answer is restored
    while it streams: a token split across chunks (`<FIR` + `MA_1>`) is buffered, so the user
@@ -100,10 +101,11 @@ numbers, e-mails, companies).
    tool arguments as it is written.
 4. The database and the user see real values; the model gets tokens in place of everything
    polanon detects and everything the panel knows from its database.
-5. **Values known from the database are always masked** (polanon `DenylistGuard`): client
-   company names (also without the legal form, e.g. "Siłownia Testowa" for "Siłownia Testowa
-   Sp. z o.o."), their NIPs (with and without dashes), companies and people from order drafts,
-   and contact people - also when a name looks like a well-known brand polanon would let through.
+5. **Values known from the database are always masked** (polanon's `known`, that is its
+   `DenylistGuard`): client company names (also without the legal form, e.g. "Siłownia Testowa"
+   for "Siłownia Testowa Sp. z o.o." and "Budex" for "Budex Sp. z o.o."), their NIPs (with
+   dashes, spaces or neither), companies and people from order drafts, and contact people - also
+   when a name looks like a well-known brand polanon would let through.
 6. **Fail closed**: with masking on, if polanon is missing or fails, nothing is sent to the
    model. The chat shows a message, the e-mail goes to manual review, and summaries and
    recommendations fall back to rules.

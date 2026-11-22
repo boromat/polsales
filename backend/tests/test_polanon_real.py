@@ -154,7 +154,8 @@ def test_email_parser_with_polanon(monkeypatch):
 
 
 def test_company_named_without_legal_form_in_the_question_is_masked():
-    """The database has "Siłownia Testowa Sp. z o.o.", the owner types just "Siłownia Testowa"."""
+    """The database has "Siłownia Testowa Sp. z o.o.", the owner types just "Siłownia Testowa".
+    polanon (0.4.2) finds a listed company without its legal form when two words or more are left."""
 
     from app.services.privacy_settings import known_terms
     from tests.test_privacy import _FakeDB
@@ -163,6 +164,57 @@ def test_company_named_without_legal_form_in_the_question_is_masked():
     masked = m.mask("Jak idzie współpraca z Siłownia Testowa (NIP 111-222-33-32)?")
     assert "Siłownia" not in masked and "111-222-33-32" not in masked
     assert m.restore(masked) == "Jak idzie współpraca z Siłownia Testowa (NIP 111-222-33-32)?"
+
+
+def test_a_one_word_company_name_without_legal_form_is_masked():
+    """polanon leaves one word alone, "Budex" for "Budex Sp. z o.o.", unmasked on purpose; the
+    panel lists it as a known term of its own, so a client of the shop named so is masked."""
+    from app.services.privacy_settings import known_terms
+    from tests.test_privacy import _FakeDB
+
+    m = privacy.polanon_masker(terms=known_terms(_FakeDB(companies=[("Budex Sp. z o.o.", None)])))
+    assert "Budex" not in m.mask("Zamówienie od Budex: 20 piłek.")
+    assert "Budex" not in json.dumps(m.mask_data({"company": "Budex"}), ensure_ascii=False)
+
+
+@pytest.mark.parametrize("stored", ["1234567890", "123-456-78-90"])
+def test_a_known_number_is_masked_however_its_digits_are_grouped(stored):
+    """The database holds a NIP as typed, here with no valid checksum, so the NIP rule does not
+    read it; polanon (0.4.2) finds a listed number of nine digits or more however it is grouped."""
+    m = privacy.polanon_masker(terms=[stored])
+    masked = m.mask("Faktura na 123-456-78-90, przelew od 1234567890, w mailu 123 45 67 890.")
+    assert not re.search(r"\d", privacy.TOKEN_RE.sub("", masked)), masked
+    assert m.restore(masked) == "Faktura na 123-456-78-90, przelew od 1234567890, w mailu 123 45 67 890."
+
+
+def test_a_name_recognised_later_in_the_history_is_masked_in_the_earlier_messages():
+    """A surname alone says nothing to the rules; once a later message names the person in full,
+    polanon masks the earlier mention too, before anything of the history goes out."""
+    m = privacy.polanon_masker()
+    masked = m.mask_messages(
+        [
+            {"role": "user", "content": [{"type": "text", "text": "Czy Kowalczyk dzwonił w sprawie piłek?"}]},
+            {"role": "assistant", "content": [{"type": "text", "text": "Nie mam takiej informacji."}]},
+            {"role": "user", "content": [{"type": "text", "text": "Pan Adam Kowalczyk prosi o fakturę."}]},
+        ]
+    )
+    assert "Kowalczyk" not in json.dumps(masked, ensure_ascii=False)
+
+
+def test_a_stale_token_after_this_requests_token_is_not_restored_as_its_value():
+    """polanon reads a token its mapping holds as text masked before; PolSales' history is stored
+    with real values, so an old <FIRMA_1> is defused and never shown as this request's client."""
+    m = privacy.polanon_masker()
+    masked = m.mask_messages(
+        [
+            {"role": "user", "content": "Ile kupił Klub Sportowy Orlik Sp. z o.o.?"},
+            {"role": "assistant", "content": [{"type": "text", "text": "Stara odpowiedź: <FIRMA_1> zapłacił."}]},
+        ]
+    )
+    assert masked[0]["content"] == "Ile kupił <FIRMA_1>?"
+    old = masked[1]["content"][0]["text"]
+    assert old == "Stara odpowiedź: [FIRMA_1] zapłacił."
+    assert m.restore(old) == old
 
 
 def test_prospect_from_a_draft_is_masked_in_a_tool_result():
